@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Madhav Enterprises - Sales, Billing & Inventory PWA</title>
+  
+  <!-- PWA Manifest & Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1e3a8a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Madhav Sales">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Hide scrollbars for slick mobile look */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+  <div id="root"></div>
+
+  <!-- Register PWA Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Madhav PWA Service Worker Registered:', reg.scope))
+          .catch(err => console.log('Service Worker failed:', err));
+      });
+    }
+  </script>
+
+  <!-- Main React PWA Application -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- SVG Icons Components ---
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+      switch (name) {
+        case 'map-pin':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>;
+        case 'clock':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>;
+        case 'shopping-bag':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>;
+        case 'box':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>;
+        case 'user':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>;
+        case 'receipt':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8h4"/></svg>;
+        case 'refresh-cw':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>;
+        case 'whatsapp':
+          return <svg className={className} fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.586-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.077-2.176-.534-1.74-.72-2.855-2.484-2.942-2.599-.087-.116-.708-.941-.708-1.794 0-.853.447-1.272.607-1.446.16-.174.348-.218.464-.218.116 0 .232.001.333.006.107.005.25-.041.391.299.144.348.493 1.202.536 1.289.043.087.072.188.014.304-.058.116-.087.188-.174.289l-.26.304c-.087.087-.179.182-.077.357.101.174.453.747.972 1.21.67.597 1.233.782 1.408.869.174.087.276.072.377-.043.101-.116.435-.507.551-.681.116-.174.232-.145.391-.087.16.058 1.016.479 1.19.566.174.087.29.13.333.203.043.072.043.42-.101.825z"/></svg>;
+        case 'shield-check':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>;
+        case 'check':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>;
+        case 'alert':
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>;
+        default:
+          return <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>;
+      }
+    };
+
+    // --- Initial Seed Data ---
+    const SEED_COMPANY = {
+      name: "MADHAV ENTERPRISES",
+      tagline: "Industrial Hardware, Bearings & Engineering Supplies",
+      gstin: "27AABCM4589K1ZP",
+      state_code: "27",
+      address: "Plot No. 42, MIDC Phase II, Bhosari, Pune - 411026",
+      phone: "+91 98220 12345",
+      bank_details: {
+        bank_name: "HDFC Bank",
+        account_no: "50200012345678",
+        ifsc: "HDFC0000123",
+        upi_id: "madhaventerprises@hdfcbank"
+      }
+    };
+
+    const SEED_CLIENTS = [
+      {
+        id: "c-101",
+        type: "B2B",
+        company_name: "Kirloskar Precision Tools Pvt Ltd",
+        gstin: "27AAECK3921Q1Z3",
+        state_code: "27",
+        contact_person: "Ajay Kulkarni (Purchase)",
+        phone: "+91 98220 99887",
+        credit_limit: 150000,
+        credit_days: 30,
+        outstanding: 38500,
+        lat: 18.6272,
+        lng: 73.8436
+      },
+      {
+        id: "c-102",
+        type: "B2B",
+        company_name: "Shree Ganesh Machine Tools",
+        gstin: "27BBSPK8942R1Z8",
+        state_code: "27",
+        contact_person: "Ganesh Shinde",
+        phone: "+91 94220 44556",
+        credit_limit: 60000,
+        credit_days: 15,
+        outstanding: 52000,
+        lat: 18.6290,
+        lng: 73.8450
+      },
+      {
+        id: "c-103",
+        type: "B2B",
+        company_name: "Apex Engineering (Gujarat Branch)",
+        gstin: "24AAPCA6543M1Z2",
+        state_code: "24", // Inter-state IGST
+        contact_person: "Bhavin Patel",
+        phone: "+91 98980 11223",
+        credit_limit: 100000,
+        credit_days: 30,
+        outstanding: 0,
+        lat: 20.3893,
+        lng: 72.9106
+      },
+      {
+        id: "c-104",
+        type: "B2C",
+        company_name: "Santosh Pawar (Workshop)",
+        gstin: "",
+        state_code: "27",
+        contact_person: "Santosh Pawar",
+        phone: "+91 99210 33445",
+        credit_limit: 5000,
+        credit_days: 0,
+        outstanding: 0,
+        lat: 18.5204,
+        lng: 73.8567
+      }
+    ];
+
+    const SEED_PRODUCTS = [
+      {
+        id: "p-001",
+        name: "SKF Ball Bearing 6205-2RS",
+        sku: "BRG-SKF-6205",
+        category: "Bearings",
+        hsn: "8482",
+        price: 380,
+        tax_rate: 18,
+        physical: 140,
+        booked: 45,
+        damaged: 3,
+        substitute_ids: ["p-002", "p-003"]
+      },
+      {
+        id: "p-002",
+        name: "FAG High Performance 6205-2RSR",
+        sku: "BRG-FAG-6205",
+        category: "Bearings",
+        hsn: "8482",
+        price: 395,
+        tax_rate: 18,
+        physical: 80,
+        booked: 10,
+        damaged: 0,
+        substitute_ids: ["p-001"]
+      },
+      {
+        id: "p-003",
+        name: "NBC Heavy Duty 6205-ZZ (Metal Shield)",
+        sku: "BRG-NBC-6205M",
+        category: "Bearings",
+        hsn: "8482",
+        price: 340,
+        tax_rate: 18,
+        physical: 5,
+        booked: 5, // 0 Available! Tests Out of Stock & Substitute Flow
+        damaged: 1,
+        substitute_ids: ["p-001", "p-002"]
+      },
+      {
+        id: "p-004",
+        name: "Bosch Angle Grinder GWS 600",
+        sku: "TOOL-BSH-GWS",
+        category: "Power Tools",
+        hsn: "8467",
+        price: 2650,
+        tax_rate: 18,
+        physical: 35,
+        booked: 8,
+        damaged: 0,
+        substitute_ids: []
+      },
+      {
+        id: "p-005",
+        name: "Castrol Grease AP3 (5 Kg)",
+        sku: "LUB-CAS-AP3",
+        category: "Lubricants",
+        hsn: "2710",
+        price: 1850,
+        tax_rate: 18,
+        physical: 25,
+        booked: 6,
+        damaged: 0,
+        substitute_ids: []
+      }
+    ];
+
+    // --- App Component ---
+    function App() {
+      const [role, setRole] = useState("SALES_REP"); // 'SALES_REP' or 'ADMIN'
+      const [isOnline, setIsOnline] = useState(navigator.onLine);
+      const [pendingSyncCount, setPendingSyncCount] = useState(0);
+      
+      // Data State
+      const [clients, setClients] = useState(SEED_CLIENTS);
+      const [products, setProducts] = useState(SEED_PRODUCTS);
+      const [orders, setOrders] = useState([]);
+      const [creditNotes, setCreditNotes] = useState([]);
+      
+      // Attendance & Geo
+      const [isPunchedIn, setIsPunchedIn] = useState(false);
+      const [punchInTime, setPunchInTime] = useState(null);
+      const [currentRepLat, setCurrentRepLat] = useState(18.6273); // MIDC Bhosari coordinates
+      const [currentRepLng, setCurrentRepLng] = useState(73.8438);
+
+      // Active Booking Session
+      const [selectedClient, setSelectedClient] = useState(SEED_CLIENTS[0]);
+      const [invoiceSeries, setInvoiceSeries] = useState("GST_INVOICE"); // 'GST_INVOICE' or 'NON_GST_ESTIMATE'
+      const [cart, setCart] = useState([]);
+      const [paidTodayInput, setPaidTodayInput] = useState(0);
+      const [isSplitDispatch, setIsSplitDispatch] = useState(false);
+
+      // Modals
+      const [activeModal, setActiveModal] = useState(null); // 'WHATSAPP_SHARE', 'SALES_RETURN', 'PAYROLL_SLIP', 'ADD_CLIENT'
+      const [lastGeneratedOrder, setLastGeneratedOrder] = useState(null);
+      const [returnForm, setReturnForm] = useState({ invoiceNo: "", qty: 1, reason: "", destination: "RESELLABLE" });
+
+      // Financial Year Sequence
+      const [gstCounter, setGstCounter] = useState(43);
+      const [estCounter, setEstCounter] = useState(19);
+      const [cnCounter, setCnCounter] = useState(10);
+
+      // Network Listener
+      useEffect(() => {
+        const handleOnline = () => {
+          setIsOnline(true);
+          if (pendingSyncCount > 0) {
+            alert(`Network reconnected! Synchronized ${pendingSyncCount} offline orders with Firebase server.`);
+            setPendingSyncCount(0);
+          }
+        };
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+          window.removeEventListener('online', handleOnline);
+          window.removeEventListener('offline', handleOffline);
+        };
+      }, [pendingSyncCount]);
+
+      // Calculate Distance (Haversine)
+      const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return 999;
+        const R = 6371e3;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+      };
+
+      // Check 100m Geofence for current selected client
+      const clientDistance = useMemo(() => {
+        return calculateDistance(currentRepLat, currentRepLng, selectedClient.lat, selectedClient.lng);
+      }, [currentRepLat, currentRepLng, selectedClient]);
+
+      const isWithin100m = clientDistance <= 100;
+
+      // Handle GPS Punch
+      const togglePunch = () => {
+        if (!isPunchedIn) {
+          setIsPunchedIn(true);
+          setPunchInTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        } else {
+          if (confirm("Do you want to Punch-out for the day?")) {
+            setIsPunchedIn(false);
+            setPunchInTime(null);
+          }
+        }
+      };
+
+      // Cart Operations
+      const addToCart = (product, qty = 1) => {
+        const availableStock = product.physical - product.booked;
+        if (availableStock <= 0) {
+          alert(`Product ${product.name} is currently Out-of-Stock! Please choose an alternative substitute below.`);
+          return;
+        }
+
+        const existing = cart.find(item => item.product_id === product.id);
+        const currentCartQty = existing ? existing.quantity : 0;
+        if (currentCartQty + qty > availableStock) {
+          alert(`Cannot book more than Available stock (${availableStock} units).`);
+          return;
+        }
+
+        if (existing) {
+          setCart(cart.map(item => item.product_id === product.id ? { ...item, quantity: item.quantity + qty } : item));
+        } else {
+          setCart([...cart, {
+            product_id: product.id,
+            name: product.name,
+            sku: product.sku,
+            price: product.price,
+            tax_rate: product.tax_rate,
+            hsn: product.hsn,
+            quantity: qty
+          }]);
+        }
+      };
+
+      const removeFromCart = (productId) => {
+        setCart(cart.filter(item => item.product_id !== productId));
+      };
+
+      // Billing Engine Calculations
+      const billSummary = useMemo(() => {
+        let subtotal = 0;
+        let cgst = 0;
+        let sgst = 0;
+        let igst = 0;
+
+        cart.forEach(item => {
+          const itemTaxable = item.price * item.quantity;
+          subtotal += itemTaxable;
+
+          if (invoiceSeries === "GST_INVOICE") {
+            const taxRate = item.tax_rate || 18;
+            const taxAmt = (itemTaxable * taxRate) / 100;
+            if (selectedClient.state_code === SEED_COMPANY.state_code) {
+              cgst += taxAmt / 2;
+              sgst += taxAmt / 2;
+            } else {
+              igst += taxAmt; // Inter-state
+            }
+          }
+        });
+
+        const totalTax = cgst + sgst + igst;
+        const currentOrderTotal = subtotal + totalTax;
+        const previousOutstanding = selectedClient.outstanding || 0;
+        const paidToday = Number(paidTodayInput) || 0;
+        
+        // Exact Formula: [Current Order Total] + [Previous Outstanding] - [Paid Today] = [Net Balance Due]
+        const netBalanceDue = Math.max(0, currentOrderTotal + previousOutstanding - paidToday);
+
+        return {
+          subtotal,
+          cgst,
+          sgst,
+          igst,
+          totalTax,
+          currentOrderTotal,
+          previousOutstanding,
+          paidToday,
+          netBalanceDue
+        };
+      }, [cart, invoiceSeries, selectedClient, paidTodayInput]);
+
+      // Complete Order & Commit Inventory
+      const handleCreateOrder = () => {
+        if (!isPunchedIn) {
+          alert("Please Punch-in your GPS attendance before booking orders!");
+          return;
+        }
+        if (cart.length === 0) {
+          alert("Your order cart is empty! Please add products.");
+          return;
+        }
+
+        let docNo = "";
+        if (invoiceSeries === "GST_INVOICE") {
+          docNo = `INV/26-27/${String(gstCounter).padStart(4, "0")}`;
+          setGstCounter(prev => prev + 1);
+        } else {
+          docNo = `EST/26-27/${String(estCounter).padStart(4, "0")}`;
+          setEstCounter(prev => prev + 1);
+        }
+
+        const newOrder = {
+          id: `ord-${Date.now()}`,
+          invoice_number: docNo,
+          invoice_series: invoiceSeries,
+          client_id: selectedClient.id,
+          client_name: selectedClient.company_name,
+          client_phone: selectedClient.phone,
+          order_channel: isWithin100m ? "FIELD_VISIT" : "PHONE_CALL",
+          is_geofence_verified: isWithin100m,
+          order_date: new Date().toISOString().split("T")[0],
+          items: [...cart],
+          ...billSummary
+        };
+
+        // 1. Commit 3-Way Inventory (Booked Stock += Order Qty)
+        setProducts(prevProducts =>
+          prevProducts.map(p => {
+            const item = cart.find(ci => ci.product_id === p.id);
+            if (item) {
+              const newBooked = p.booked + item.quantity;
+              return { ...p, booked: newBooked };
+            }
+            return p;
+          })
+        );
+
+        // 2. Update Client Outstanding Balance
+        setClients(prevClients =>
+          prevClients.map(c =>
+            c.id === selectedClient.id ? { ...c, outstanding: billSummary.netBalanceDue } : c
+          )
+        );
+
+        // 3. Add to orders
+        setOrders([newOrder, ...orders]);
+        setLastGeneratedOrder(newOrder);
+
+        // Offline check
+        if (!isOnline) {
+          setPendingSyncCount(prev => prev + 1);
+        }
+
+        // Reset Cart
+        setCart([]);
+        setPaidTodayInput(0);
+        setActiveModal('WHATSAPP_SHARE');
+      };
+
+      // Sales Return Execution
+      const handleProcessReturn = (e) => {
+        e.preventDefault();
+        const prod = products.find(p => p.id === "p-001");
+        const docNo = `CN/26-27/${String(cnCounter).padStart(4, "0")}`;
+        setCnCounter(prev => prev + 1);
+
+        const refundAmt = (Number(returnForm.qty) || 1) * prod.price;
+
+        // Restock goods (Resellable adds to Physical; Damaged adds to Damaged)
+        setProducts(prev =>
+          prev.map(p => {
+            if (p.id === prod.id) {
+              if (returnForm.destination === "RESELLABLE") {
+                return { ...p, physical: p.physical + Number(returnForm.qty) };
+              } else {
+                return { ...p, damaged: p.damaged + Number(returnForm.qty) };
+              }
+            }
+            return p;
+          })
+        );
+
+        // Deduct from client balance
+        setClients(prev =>
+          prev.map(c =>
+            c.id === selectedClient.id ? { ...c, outstanding: Math.max(0, c.outstanding - refundAmt) } : c
+          )
+        );
+
+        const newCreditNote = {
+          docNo,
+          invoiceNo: returnForm.invoiceNo || "INV/26-27/0041",
+          clientName: selectedClient.company_name,
+          amount: refundAmt,
+          qty: returnForm.qty,
+          destination: returnForm.destination,
+          reason: returnForm.reason || "Client requirement changed"
+        };
+        setCreditNotes([newCreditNote, ...creditNotes]);
+        alert(`Credit Note ${docNo} generated successfully! ₹${refundAmt} deducted from customer ledger.`);
+        setActiveModal(null);
+      };
+
+      // Formatted WhatsApp Text
+      const getWhatsAppText = (order) => {
+        if (!order) return "";
+        return `*${SEED_COMPANY.name}*
+${SEED_COMPANY.address}
+GSTIN: *${SEED_COMPANY.gstin}* | Ph: ${SEED_COMPANY.phone}
+━━━━━━━━━━━━━━━━━━━━
+📄 *${order.invoice_series === 'GST_INVOICE' ? 'TAX INVOICE' : 'ESTIMATE VOUCHER'}*
+🔢 *Doc No:* ${order.invoice_number}
+📅 *Date:* ${order.order_date}
+👤 *Client:* ${order.client_name}
+📍 *Channel:* ${order.is_geofence_verified ? '✅ 100m Geo-Verified Field Visit' : '📞 Phone Call Order'}
+━━━━━━━━━━━━━━━━━━━━
+📦 *ITEMS:*
+${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} PCS) = ₹${(it.price * it.quantity).toLocaleString()}`).join('\n')}
+━━━━━━━━━━━━━━━━━━━━
+💰 *LEDGER BREAKDOWN:*
+• Current Order Total: ₹${order.currentOrderTotal.toLocaleString()}
+• Previous Outstanding: ₹${order.previousOutstanding.toLocaleString()}
+• Paid/Advance Today: ₹${order.paidToday.toLocaleString()}
+━━━━━━━━━━━━━━━━━━━━
+🔴 *NET BALANCE DUE: ₹${order.netBalanceDue.toLocaleString()}*
+━━━━━━━━━━━━━━━━━━━━
+💳 *PAY VIA UPI:*
+UPI ID: \`${SEED_COMPANY.bank_details.upi_id}\`
+Bank: ${SEED_COMPANY.bank_details.bank_name} | IFSC: ${SEED_COMPANY.bank_details.ifsc}`;
+      };
+
+      return (
+        <div className="max-w-7xl mx-auto pb-12">
+          {/* Header & Role Switcher */}
+          <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-lg px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-xl shadow-md shadow-blue-500/30">
+                M
+              </div>
+              <div>
+                <h1 className="font-bold text-base leading-tight tracking-wide">{SEED_COMPANY.name}</h1>
+                <p className="text-xs text-blue-300">Sales, Billing & Inventory PWA</p>
+              </div>
+            </div>
+
+            {/* Offline & Sync Status */}
+            <div className="flex items-center space-x-2">
+              <div className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1.5 ${isOnline ? 'bg-emerald-950 text-emerald-400 border border-emerald-700/50' : 'bg-amber-950 text-amber-300 border border-amber-700'}`}>
+                <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
+                <span>{isOnline ? 'Online (Firebase Live)' : `Offline (${pendingSyncCount} queued)`}</span>
+              </div>
+
+              {/* Role Toggle Pill */}
+              <div className="bg-slate-800 p-1 rounded-xl flex items-center border border-slate-700">
+                <button
+                  onClick={() => setRole("SALES_REP")}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${role === 'SALES_REP' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                >
+                  📱 Field Sales
+                </button>
+                <button
+                  onClick={() => setRole("ADMIN")}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${role === 'ADMIN' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                >
+                  🖥️ Admin Dashboard
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* ========================================================================= */}
+          {/* VIEW 1: FIELD SALES EXECUTIVE MOBILE VIEW                                 */}
+          {/* ========================================================================= */}
+          {role === 'SALES_REP' && (
+            <main className="p-4 space-y-4 max-w-2xl mx-auto">
+              {/* GPS Punch-In Attendance Card */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Sales Executive</span>
+                    <h2 className="text-lg font-bold text-slate-800">Ramesh Patil</h2>
+                    <p className="text-xs text-slate-500 flex items-center space-x-1 mt-0.5">
+                      <Icon name="map-pin" className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Today's Beat: MIDC Bhosari (Monday Beat)</span>
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={togglePunch}
+                    className={`px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center space-x-1.5 ${
+                      isPunchedIn
+                        ? 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
+                    }`}
+                  >
+                    <Icon name="clock" className="w-4 h-4" />
+                    <span>{isPunchedIn ? `Punch Out (${punchInTime})` : 'GPS Punch In'}</span>
+                  </button>
+                </div>
+
+                {isPunchedIn && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                    <span className="flex items-center text-emerald-600 font-medium">
+                      <Icon name="shield-check" className="w-4 h-4 mr-1" />
+                      GPS Coordinates Verified (18.6273, 73.8438)
+                    </span>
+                    <button onClick={() => setActiveModal('PAYROLL_SLIP')} className="text-blue-600 font-bold hover:underline">
+                      My Wallet & Commission ₹8,500 &rarr;
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Client Selection & 100m Geofencing Banner */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Client Account</label>
+                  <button onClick={() => setActiveModal('SALES_RETURN')} className="text-xs font-bold text-rose-600 hover:underline flex items-center">
+                    <Icon name="refresh-cw" className="w-3.5 h-3.5 mr-1" /> 15-20 Days Sales Return
+                  </button>
+                </div>
+
+                <select
+                  value={selectedClient.id}
+                  onChange={(e) => setSelectedClient(clients.find(c => c.id === e.target.value))}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      [{c.type}] {c.company_name} {c.gstin ? `(${c.gstin})` : ''} - Due: ₹{c.outstanding.toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+
+                {/* 100m Geofence Live Verification Pill */}
+                <div className={`mt-3 p-2.5 rounded-xl text-xs font-medium flex items-center justify-between ${
+                  isWithin100m ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    <Icon name={isWithin100m ? 'shield-check' : 'alert'} className="w-4 h-4" />
+                    <span>
+                      {isWithin100m
+                        ? `100m Geo-Fence Match: Distance ${clientDistance}m (Shop Verified)`
+                        : `Distance: ${clientDistance}m (>100m boundary, marked as Remote/Phone)`}
+                    </span>
+                  </div>
+                  <span className="font-bold px-2 py-0.5 rounded bg-white text-xs shadow-sm">
+                    {isWithin100m ? 'FIELD VISIT' : 'PHONE ORDER'}
+                  </span>
+                </div>
+
+                {/* Client Credit Limit Info */}
+                {selectedClient.type === 'B2B' && (
+                  <div className="mt-3 bg-slate-50 p-3 rounded-xl text-xs space-y-1.5">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Credit Limit: ₹{selectedClient.credit_limit.toLocaleString()}</span>
+                      <span className="font-bold text-slate-800">Credit Days: {selectedClient.credit_days} Days</span>
+                    </div>
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${selectedClient.outstanding / selectedClient.credit_limit > 0.8 ? 'bg-rose-500' : 'bg-blue-600'}`}
+                        style={{ width: `${Math.min(100, (selectedClient.outstanding / selectedClient.credit_limit) * 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-slate-500 font-medium">
+                      <span>Outstanding Due: <b className="text-slate-800">₹{selectedClient.outstanding.toLocaleString()}</b></span>
+                      <span>Available Credit: ₹{Math.max(0, selectedClient.credit_limit - selectedClient.outstanding).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Dual-Series Billing Switcher */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dual-Series Billing Engine</span>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button
+                    onClick={() => setInvoiceSeries("GST_INVOICE")}
+                    className={`p-3 rounded-xl text-left border transition-all ${
+                      invoiceSeries === 'GST_INVOICE'
+                        ? 'border-blue-600 bg-blue-50/70 text-blue-900 shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="font-bold text-sm">GST Tax Invoice</div>
+                    <div className="text-xs text-blue-700 font-mono mt-0.5">INV/26-27/{String(gstCounter).padStart(4, "0")}</div>
+                    <div className="text-[11px] text-slate-500 mt-1">HSN + CGST/SGST/IGST</div>
+                  </button>
+
+                  <button
+                    onClick={() => setInvoiceSeries("NON_GST_ESTIMATE")}
+                    className={`p-3 rounded-xl text-left border transition-all ${
+                      invoiceSeries === 'NON_GST_ESTIMATE'
+                        ? 'border-purple-600 bg-purple-50/70 text-purple-900 shadow-sm'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="font-bold text-sm">Non-GST / Estimate</div>
+                    <div className="text-xs text-purple-700 font-mono mt-0.5">EST/26-27/{String(estCounter).padStart(4, "0")}</div>
+                    <div className="text-[11px] text-slate-500 mt-1">Cash / Internal (0% Tax)</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Catalog with 3-Way Inventory */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Book Order Products</h3>
+                  <span className="text-xs text-slate-500">Live 3-Way Stock</span>
+                </div>
+
+                <div className="space-y-3">
+                  {products.map(prod => {
+                    const available = prod.physical - prod.booked;
+                    const isOutOfStock = available <= 0;
+                    const cartItem = cart.find(ci => ci.product_id === prod.id);
+
+                    return (
+                      <div key={prod.id} className="p-3 rounded-xl border border-slate-200 hover:border-slate-300 transition-all bg-slate-50/40">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-bold text-sm text-slate-800">{prod.name}</div>
+                            <div className="text-xs text-slate-500 font-mono">SKU: {prod.sku} | HSN: {prod.hsn}</div>
+                            <div className="text-xs font-bold text-blue-600 mt-1">₹{prod.price.toLocaleString()} + {invoiceSeries === 'GST_INVOICE' ? `${prod.tax_rate}% GST` : '0% Tax'}</div>
+                          </div>
+
+                          {/* 3-Way Stock Metrics Badges */}
+                          <div className="text-right space-y-1">
+                            <div className="flex items-center space-x-1 text-[11px]">
+                              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold" title="Physical stock in warehouse">
+                                Phys: {prod.physical}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-semibold" title="Booked to other unfulfilled orders">
+                                Book: {prod.booked}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded font-bold ${
+                                available > 10 ? 'bg-emerald-100 text-emerald-800' : available > 0 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                              }`} title="Available for field rep to book">
+                                Avail: {available}
+                              </span>
+                            </div>
+
+                            {/* Add / Qty Controls */}
+                            <div className="pt-1">
+                              {cartItem ? (
+                                <div className="flex items-center justify-end space-x-2">
+                                  <button onClick={() => addToCart(prod, -1)} className="w-7 h-7 rounded-lg bg-slate-200 text-slate-800 font-bold">-</button>
+                                  <span className="font-bold text-sm text-slate-800 px-1">{cartItem.quantity}</span>
+                                  <button onClick={() => addToCart(prod, 1)} className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold">+</button>
+                                </div>
+                              ) : (
+                                <button
+                                  disabled={isOutOfStock}
+                                  onClick={() => addToCart(prod, 1)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    isOutOfStock
+                                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                                  }`}
+                                >
+                                  {isOutOfStock ? 'Out of Stock' : '+ Add Item'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Out of Stock Substitute Recommendation Flow */}
+                        {isOutOfStock && prod.substitute_ids && prod.substitute_ids.length > 0 && (
+                          <div className="mt-2.5 p-2 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
+                            <div className="font-bold flex items-center space-x-1">
+                              <Icon name="alert" className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Alternative In-Stock Substitutes:</span>
+                            </div>
+                            <div className="mt-1 space-y-1">
+                              {prod.substitute_ids.map(subId => {
+                                const subProd = products.find(p => p.id === subId);
+                                if (!subProd || (subProd.physical - subProd.booked) <= 0) return null;
+                                return (
+                                  <div key={subId} className="flex items-center justify-between bg-white px-2 py-1 rounded border border-amber-200">
+                                    <span>{subProd.name} (₹{subProd.price}) - <b>{subProd.physical - subProd.booked} in stock</b></span>
+                                    <button
+                                      onClick={() => addToCart(subProd, 1)}
+                                      className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[11px]"
+                                    >
+                                      + Switch
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Order Cart & Formula Calculation Summary */}
+              {cart.length > 0 && (
+                <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-blue-500/30 sticky bottom-3 z-30">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="font-bold text-slate-800 text-sm">Order Cart ({cart.length} items)</span>
+                    <button onClick={() => setCart([])} className="text-xs text-rose-500 font-medium">Clear All</button>
+                  </div>
+
+                  {/* Cart Items List */}
+                  <div className="py-2 space-y-1.5 max-h-36 overflow-y-auto no-scrollbar text-xs">
+                    {cart.map(item => (
+                      <div key={item.product_id} className="flex justify-between items-center text-slate-700">
+                        <span>{item.name} × {item.quantity}</span>
+                        <span className="font-semibold font-mono">₹{(item.price * item.quantity).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Payment Today Input */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                    <label className="font-semibold text-slate-600 whitespace-nowrap">Cash/UPI Received Today:</label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-2 text-slate-400 font-bold">₹</span>
+                      <input
+                        type="number"
+                        value={paidTodayInput}
+                        onChange={(e) => setPaidTodayInput(e.target.value)}
+                        placeholder="0"
+                        className="w-32 bg-slate-50 border border-slate-300 rounded-lg pl-6 pr-2 py-1.5 font-bold text-right text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Backorder / Split Dispatch Checkbox */}
+                  <div className="pt-2 flex items-center space-x-2 text-xs text-slate-600">
+                    <input
+                      type="checkbox"
+                      id="splitDispatch"
+                      checked={isSplitDispatch}
+                      onChange={(e) => setIsSplitDispatch(e.target.checked)}
+                      className="rounded text-blue-600"
+                    />
+                    <label htmlFor="splitDispatch" className="cursor-pointer">Support Split Dispatch / Backorder</label>
+                  </div>
+
+                  {/* Key Vyapar Formula Box */}
+                  <div className="mt-3 p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
+                    <div className="flex justify-between text-slate-300">
+                      <span>Current Order Total:</span>
+                      <span className="font-mono font-semibold">₹{billSummary.currentOrderTotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-300">
+                      <span>(+) Previous Outstanding:</span>
+                      <span className="font-mono font-semibold">₹{billSummary.previousOutstanding.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-400">
+                      <span>(-) Paid/Advance Today:</span>
+                      <span className="font-mono font-semibold">₹{billSummary.paidToday.toLocaleString()}</span>
+                    </div>
+                    <div className="pt-2 border-t border-slate-700 flex justify-between text-sm font-bold text-amber-300">
+                      <span>(=) NET BALANCE DUE:</span>
+                      <span className="font-mono text-base font-extrabold">₹{billSummary.netBalanceDue.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleCreateOrder}
+                    className="w-full mt-3 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center justify-center space-x-2"
+                  >
+                    <Icon name="check" className="w-4 h-4" />
+                    <span>Book Order & Generate Bill</span>
+                  </button>
+                </div>
+              )}
+            </main>
+          )}
+
+          {/* ========================================================================= */}
+          {/* VIEW 2: ADMIN / OWNER DASHBOARD VIEW                                      */}
+          {/* ========================================================================= */}
+          {role === 'ADMIN' && (
+            <main className="p-4 md:p-6 space-y-6">
+              {/* KPI Metrics Snapshot */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="text-xs font-bold text-slate-400 uppercase">Today's Total Sales</div>
+                  <div className="text-2xl font-extrabold text-slate-800 mt-1">₹48,250</div>
+                  <div className="text-xs text-emerald-600 font-semibold mt-0.5">GST: ₹39,282 | Est: ₹8,968</div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="text-xs font-bold text-slate-400 uppercase">Collections Made</div>
+                  <div className="text-2xl font-extrabold text-emerald-600 mt-1">₹24,500</div>
+                  <div className="text-xs text-slate-500 mt-0.5">Cash: ₹8,500 | UPI: ₹16,000</div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="text-xs font-bold text-slate-400 uppercase">Outstanding Ledger Due</div>
+                  <div className="text-2xl font-extrabold text-rose-600 mt-1">₹90,500</div>
+                  <div className="text-xs text-rose-500 font-semibold mt-0.5">3 B2B Clients Overdue</div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="text-xs font-bold text-slate-400 uppercase">Low Stock Alerts</div>
+                  <div className="text-2xl font-extrabold text-amber-600 mt-1">1 Item</div>
+                  <div className="text-xs text-slate-500 mt-0.5">NBC 6205 Bearing = 0 Avail</div>
+                </div>
+              </div>
+
+              {/* 3-Way Inventory Central Table */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-800">Live 3-Way Stock Management Hub</h2>
+                    <p className="text-xs text-slate-500">Physical vs Booked vs Available for Sale inventory tracking</p>
+                  </div>
+                  <button onClick={() => alert("Simulated: Stock Inward GRN created")} className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold text-xs shadow">
+                    + Inward Purchase Stock
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-700">
+                    <thead className="bg-slate-50 text-slate-500 uppercase border-y border-slate-200 font-bold">
+                      <tr>
+                        <th className="py-3 px-4">Product Name & SKU</th>
+                        <th className="py-3 px-4">Category</th>
+                        <th className="py-3 px-4">Unit Price</th>
+                        <th className="py-3 px-4 text-center bg-blue-50/50">Physical Stock</th>
+                        <th className="py-3 px-4 text-center bg-purple-50/50">Booked Stock</th>
+                        <th className="py-3 px-4 text-center bg-emerald-50/50">Available for Sale</th>
+                        <th className="py-3 px-4 text-center bg-rose-50/50">Damaged Stock</th>
+                        <th className="py-3 px-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {products.map(p => {
+                        const available = p.physical - p.booked;
+                        return (
+                          <tr key={p.id} className="hover:bg-slate-50">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-slate-800">{p.name}</div>
+                              <div className="font-mono text-slate-400 text-[11px]">{p.sku} | HSN: {p.hsn}</div>
+                            </td>
+                            <td className="py-3 px-4">{p.category}</td>
+                            <td className="py-3 px-4 font-bold">₹{p.price.toLocaleString()}</td>
+                            <td className="py-3 px-4 text-center font-bold text-blue-700 bg-blue-50/30">{p.physical}</td>
+                            <td className="py-3 px-4 text-center font-bold text-purple-700 bg-purple-50/30">{p.booked}</td>
+                            <td className="py-3 px-4 text-center font-bold text-emerald-700 bg-emerald-50/30">{available}</td>
+                            <td className="py-3 px-4 text-center font-bold text-rose-700 bg-rose-50/30">{p.damaged}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                                available > 10 ? 'bg-emerald-100 text-emerald-800' : available > 0 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {available > 10 ? 'In Stock' : available > 0 ? 'Low Stock' : 'Out of Stock'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Dual-Series Billing Register & Orders History */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-800">Dual-Series Billing Register (GST & Non-GST)</h2>
+                    <p className="text-xs text-slate-500">Separately partitioned series with sequential invoice numbering</p>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-700">
+                    <thead className="bg-slate-50 text-slate-500 uppercase border-y border-slate-200 font-bold">
+                      <tr>
+                        <th className="py-3 px-4">Invoice / Estimate No</th>
+                        <th className="py-3 px-4">Series</th>
+                        <th className="py-3 px-4">Client Name</th>
+                        <th className="py-3 px-4">Channel & Verification</th>
+                        <th className="py-3 px-4 text-right">Order Total</th>
+                        <th className="py-3 px-4 text-right">Paid Today</th>
+                        <th className="py-3 px-4 text-right">Net Due</th>
+                        <th className="py-3 px-4 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {orders.map(ord => (
+                        <tr key={ord.id} className="hover:bg-slate-50">
+                          <td className="py-3 px-4 font-mono font-bold text-blue-600">{ord.invoice_number}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.invoice_series === 'GST_INVOICE' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                              {ord.invoice_series === 'GST_INVOICE' ? 'GST INVOICE' : 'NON-GST EST'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-slate-800">{ord.client_name}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${ord.is_geofence_verified ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                              {ord.is_geofence_verified ? '✅ 100m Field Visit' : '📞 Phone Order'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono font-bold">₹{ord.currentOrderTotal.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-right font-mono text-emerald-600 font-bold">₹{ord.paidToday.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-right font-mono text-rose-600 font-bold">₹{ord.netBalanceDue.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() => {
+                                setLastGeneratedOrder(ord);
+                                setActiveModal('WHATSAPP_SHARE');
+                              }}
+                              className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]"
+                            >
+                              Share PDF
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {orders.length === 0 && (
+                        <tr>
+                          <td colSpan="8" className="py-8 text-center text-slate-400">
+                            No orders booked yet. Switch to "Field Sales" mode above to book the first order!
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </main>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODAL 1: 1-CLICK WHATSAPP SHARE & PRINTABLE RECEIPT                      */}
+          {/* ========================================================================= */}
+          {activeModal === 'WHATSAPP_SHARE' && lastGeneratedOrder && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+                      <Icon name="whatsapp" className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">1-Click WhatsApp Invoice Ready</h3>
+                      <p className="text-xs text-slate-500">Doc: {lastGeneratedOrder.invoice_number}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+                </div>
+
+                {/* WhatsApp Text Preview */}
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 whitespace-pre-wrap max-h-60 overflow-y-auto no-scrollbar">
+                  {getWhatsAppText(lastGeneratedOrder)}
+                </div>
+
+                <div className="flex space-x-2">
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(getWhatsAppText(lastGeneratedOrder))}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-1.5 shadow"
+                  >
+                    <Icon name="whatsapp" className="w-4 h-4" />
+                    <span>Send on WhatsApp</span>
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      window.print();
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center space-x-1"
+                  >
+                    <Icon name="receipt" className="w-4 h-4" />
+                    <span>Print PDF</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODAL 2: 15-20 DAYS SALES RETURN & CREDIT NOTE                           */}
+          {/* ========================================================================= */}
+          {activeModal === 'SALES_RETURN' && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <form onSubmit={handleProcessReturn} className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="font-bold text-slate-800 text-sm">15-20 Days Sales Return Flow</h3>
+                  <button type="button" onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="font-semibold text-slate-600">Client Name</label>
+                    <input type="text" readOnly value={selectedClient.company_name} className="w-full mt-1 bg-slate-100 border border-slate-200 rounded-lg p-2 font-medium text-slate-700" />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-600">Original Invoice Number</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. INV/26-27/0041"
+                      value={returnForm.invoiceNo}
+                      onChange={(e) => setReturnForm({ ...returnForm, invoiceNo: e.target.value })}
+                      className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-mono font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-semibold text-slate-600">Return Quantity</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={returnForm.qty}
+                        onChange={(e) => setReturnForm({ ...returnForm, qty: e.target.value })}
+                        className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-600">Restock Destination</label>
+                      <select
+                        value={returnForm.destination}
+                        onChange={(e) => setReturnForm({ ...returnForm, destination: e.target.value })}
+                        className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-semibold"
+                      >
+                        <option value="RESELLABLE">Resellable Stock (Warehouse)</option>
+                        <option value="DAMAGED">Damaged Quarantine Stock</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-600">Reason for Return</label>
+                    <textarea
+                      rows="2"
+                      placeholder="Wrong specification / transit defect..."
+                      value={returnForm.reason}
+                      onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
+                      className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <button type="submit" className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md">
+                  Issue Credit Note & Deduct Balance
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODAL 3: SALES REP PAYROLL & COMMISSION WALLET                           */}
+          {/* ========================================================================= */}
+          {activeModal === 'PAYROLL_SLIP' && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">Monthly Payroll & Commission</h3>
+                    <p className="text-xs text-slate-500">Ramesh Patil - Month of November 2026</p>
+                  </div>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Verified Attendance (26 Days):</span>
+                    <span className="font-bold text-slate-800">₹22,000 (Base)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Commission on Collections (2% of ₹3.5L):</span>
+                    <span className="font-bold text-emerald-600">+₹7,000</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-1 text-rose-600">
+                    <span>(-) Cash Collected from Clients (In-hand liability):</span>
+                    <span className="font-bold">-₹8,500</span>
+                  </div>
+                  <div className="flex justify-between text-rose-600">
+                    <span>(-) Salary Advance:</span>
+                    <span className="font-bold">-₹2,000</span>
+                  </div>
+                  <div className="flex justify-between border-t-2 border-slate-300 pt-2 text-sm font-extrabold text-blue-900">
+                    <span>NET TAKE-HOME PAYOUT:</span>
+                    <span>₹18,500</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    alert("Salary slip downloaded as PDF.");
+                    setActiveModal(null);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow"
+                >
+                  Download Verified Salary Slip (PDF)
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

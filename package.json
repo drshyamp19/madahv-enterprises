@@ -1,0 +1,25 @@
+{
+  "name": "madhav-enterprises-pwa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Comprehensive B2B & B2C Sales, Billing & Inventory PWA with Vyapar-like features",
+  "scripts": {
+    "start": "serve -s . -l 3000"
+  },
+  "dependencies": {
+    "firebase": "^10.12.0"
+  },
+  "keywords": [
+    "b2b",
+    "b2c",
+    "vyapar",
+    "sales",
+    "billing",
+    "inventory",
+    "gst",
+    "pwa",
+    "field-sales"
+  ],
+  "author": "Madhav Enterprises",
+  "license": "MIT"
+}
