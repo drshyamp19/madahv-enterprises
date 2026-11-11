@@ -1,13 +1,13 @@
-// Firebase Configuration & Offline-First Persistence Architecture
-// Supports Cloud Firestore, Realtime Database (for GPS), and Firebase Auth
-
+// Firebase Configuration with Real Project Keys
+// Project: madhav-enterprises-541a1
 export const firebaseConfig = {
-  apiKey: "AIzaSyDemoKey-MadhavEnterprises-FreeSpark",
-  authDomain: "madhav-enterprises-prod.firebaseapp.com",
-  projectId: "madhav-enterprises-prod",
-  storageBucket: "madhav-enterprises-prod.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  apiKey: "AIzaSyCJ32N2Oe1OaVXus6JD8EUKy4Lh9_uz0e8",
+  authDomain: "madhav-enterprises-541a1.firebaseapp.com",
+  projectId: "madhav-enterprises-541a1",
+  storageBucket: "madhav-enterprises-541a1.firebasestorage.app",
+  messagingSenderId: "240604778910",
+  appId: "1:240604778910:web:45a6ce64bd17f102cbc68f",
+  measurementId: "G-E3725NGMCB"
 };
 
 // Offline sync queue helper (Stored in LocalStorage / IndexedDB for offline field sales)
