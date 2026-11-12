@@ -11959,7 +11959,7 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                       <span>
                         {isWithin100m
                           ? `100m Geo-Verified: Distance ${clientDistance}m (Shop Visit Verified)`
-                          : `Distance: ${clientDistance}m (>100m - Remote / Phone Order)`}
+                          : `Distance: ${clientDistance}m (Over 100m - Remote / Phone Order)`}
                       </span>
                     </div>
                     <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-white shadow-xs">
@@ -12505,7 +12505,7 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                     </div>
 
                     <div className="bg-white p-4 rounded-2xl border border-amber-200 shadow-sm">
-                      <div className="text-xs font-bold text-slate-500 uppercase">Critical Dues (>₹15,000)</div>
+                      <div className="text-xs font-bold text-slate-500 uppercase">Critical Dues (Over ₹15,000)</div>
                       <div className="text-2xl font-black text-amber-600 font-mono mt-1">
                         {overdueClients.filter(c => c.outstanding >= 15000).length} High Priority
                       </div>
