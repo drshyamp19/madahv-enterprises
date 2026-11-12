@@ -11252,8 +11252,7 @@ ${isGstFirm ? `GSTIN: *${firmInfo.gstin}* | Ph: ${firmInfo.phone}` : `Ph: ${firm
 📍 *Channel:* ${order.is_geofence_verified ? '✅ 100m Geo-Verified Field Visit' : '📞 Phone Call Order'}
 ━━━━━━━━━━━━━━━━━━━━
 📦 *ORDER ITEMS:*
-${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} PCS) = ₹${(it.price * it.quantity).toLocaleString()}`).join('
-')}
+${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} PCS) = ₹${(it.price * it.quantity).toLocaleString()}`).join(String.fromCharCode(10))}
 ━━━━━━━━━━━━━━━━━━━━
 💰 *BILL SUMMARY & LEDGER:*
 • Current Order Total: ₹${order.currentOrderTotal.toLocaleString()}
@@ -12043,7 +12042,13 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
       );
     }
 
-    ReactDOM.render(<App />, document.getElementById('root'));
+    const container = document.getElementById('root');
+    if (ReactDOM.createRoot) {
+      const root = ReactDOM.createRoot(container);
+      root.render(<App />);
+    } else {
+      ReactDOM.render(<App />, container);
+    }
   </script>
 </body>
 </html>
