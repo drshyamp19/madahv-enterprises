@@ -60,10 +60,17 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     @media print {
-      body {
+      @page {
+        size: A4 portrait;
+        margin: 8mm 10mm;
+      }
+      html, body {
         background: #ffffff !important;
         margin: 0 !important;
         padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -72,21 +79,22 @@
       }
       #printable-invoice {
         display: block !important;
-        position: relative !important;
+        visibility: visible !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
-      }
-      @page {
-        size: A4 portrait;
-        margin: 10mm 12mm;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
       }
     }
     @media screen {
       #printable-invoice {
-        display: none;
+        display: none !important;
       }
     }
   </style>
@@ -11344,6 +11352,18 @@
 
       const [activeModal, setActiveModal] = useState(null);
       const [lastGeneratedOrder, setLastGeneratedOrder] = useState(null);
+      const [invoiceModalTab, setInvoiceModalTab] = useState('WHATSAPP');
+
+      useEffect(() => {
+        const container = document.getElementById('printable-invoice');
+        if (container) {
+          if (lastGeneratedOrder) {
+            container.innerHTML = getPrintableInvoiceHtml(lastGeneratedOrder, selectedClient);
+          } else {
+            container.innerHTML = '';
+          }
+        }
+      }, [lastGeneratedOrder, selectedClient]);
       const [ordersHistory, setOrdersHistory] = useState([]);
 
       // Filtered clients list based on search bar
@@ -12697,28 +12717,51 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
             </main>
           )}
 
-          {/* MODAL 1: WHATSAPP SHARE */}
+          {/* MODAL 1: WHATSAPP SHARE & OFFICIAL A4 PRINT */}
           {activeModal === 'WHATSAPP_SHARE' && lastGeneratedOrder && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-100 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="bg-white rounded-2xl max-w-2xl w-full p-5 shadow-2xl border border-slate-100 space-y-3 max-h-[92vh] flex flex-col">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-                      <Icon name="whatsapp" className="w-5 h-5" />
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                      ✓
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-800 text-sm">1-Click WhatsApp Invoice Ready</h3>
-                      <p className="text-xs text-slate-500">{lastGeneratedOrder.firm_name} - {lastGeneratedOrder.invoice_number}</p>
+                      <h3 className="font-bold text-slate-800 text-sm">Order Confirmed & Invoiced</h3>
+                      <p className="text-xs text-slate-500">{lastGeneratedOrder.firm_name} · Doc: {lastGeneratedOrder.invoice_number}</p>
                     </div>
                   </div>
                   <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
                 </div>
 
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 whitespace-pre-wrap max-h-60 overflow-y-auto no-scrollbar">
-                  {getWhatsAppText(lastGeneratedOrder)}
+                {/* Sub-tabs: WhatsApp Message vs Official A4 Invoice Preview */}
+                <div className="flex space-x-2 border-b border-slate-100 pb-2">
+                  <button
+                    onClick={() => setInvoiceModalTab('WHATSAPP')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${invoiceModalTab === 'WHATSAPP' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
+                    💬 WhatsApp Message
+                  </button>
+                  <button
+                    onClick={() => setInvoiceModalTab('A4_PREVIEW')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${invoiceModalTab === 'A4_PREVIEW' ? 'bg-blue-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
+                    📄 Official A4 Tax Invoice Preview
+                  </button>
                 </div>
 
-                <div className="flex space-x-2">
+                {invoiceModalTab === 'WHATSAPP' ? (
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 whitespace-pre-wrap max-h-64 overflow-y-auto no-scrollbar flex-1">
+                    {getWhatsAppText(lastGeneratedOrder)}
+                  </div>
+                ) : (
+                  <div 
+                    className="bg-white p-3 rounded-xl border border-slate-200 max-h-80 overflow-y-auto no-scrollbar shadow-inner flex-1"
+                    dangerouslySetInnerHTML={{ __html: getPrintableInvoiceHtml(lastGeneratedOrder, selectedClient) }}
+                  />
+                )}
+
+                <div className="flex space-x-2 pt-2 border-t border-slate-100">
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(getWhatsAppText(lastGeneratedOrder))}`}
                     target="_blank"
@@ -12734,12 +12777,10 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                       const container = document.getElementById('printable-invoice');
                       if (container) {
                         container.innerHTML = getPrintableInvoiceHtml(lastGeneratedOrder, selectedClient);
-                        setTimeout(() => window.print(), 100);
-                      } else {
-                        window.print();
                       }
+                      window.print();
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center space-x-1.5 shadow"
+                    className="px-4 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs flex items-center space-x-1.5 shadow"
                   >
                     <Icon name="receipt" className="w-4 h-4" />
                     <span>Print Official A4 Invoice (PDF)</span>
