@@ -11222,11 +11222,11 @@
           return;
         }
 
-        if (calculation.netBalanceDue > selectedClient.credit_limit) {
-          const excess = calculation.netBalanceDue - selectedClient.credit_limit;
+        if (billSummary.netBalanceDue > selectedClient.credit_limit) {
+          const excess = billSummary.netBalanceDue - selectedClient.credit_limit;
           const proceed = confirm(`⚠️ Credit Limit Warning!
 
-Total Due (₹${calculation.netBalanceDue.toLocaleString()}) exceeds the ₹10,000 Credit Limit by ₹${excess.toLocaleString()}.
+Total Due (₹${billSummary.netBalanceDue.toLocaleString()}) exceeds the ₹10,000 Credit Limit by ₹${excess.toLocaleString()}.
 
 Do you want to proceed and book order?`);
           if (!proceed) return;
