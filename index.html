@@ -11037,8 +11037,14 @@
       const [paidTodayInput, setPaidTodayInput] = useState(0);
 
       const [clientSearch, setClientSearch] = useState("");
+      const [isSelectingParty, setIsSelectingParty] = useState(false);
       const currentClientList = currentFirmKey === "MADHAV" ? MASTER_GST_CLIENTS : MASTER_NON_GST_DEALERS;
       const [selectedClient, setSelectedClient] = useState(currentClientList[0]);
+
+      // Item search & Category states
+      const [itemSearch, setItemSearch] = useState("");
+      const [selectedCategory, setSelectedCategory] = useState("ALL");
+      const [showAllProducts, setShowAllProducts] = useState(false);
 
       // Whenever firm switches, reset selected client and series
       const switchFirm = (key) => {
@@ -11075,6 +11081,34 @@
           (c.gstin && c.gstin.toLowerCase().includes(q))
         );
       }, [currentClientList, clientSearch]);
+
+      // Filtered products list based on search and category
+      const filteredProducts = useMemo(() => {
+        let list = products;
+        if (selectedCategory !== 'ALL') {
+          if (selectedCategory === 'COOKER') {
+            list = list.filter(p => p.category === 'Pressure Cookers' || p.name.toLowerCase().includes('cooker'));
+          } else if (selectedCategory === 'INDUCTION') {
+            list = list.filter(p => p.category === 'Induction Cooktops' || p.name.toLowerCase().includes('induction'));
+          } else if (selectedCategory === 'GAS_STOVE') {
+            list = list.filter(p => p.category === 'Gas Stoves' || p.name.toLowerCase().includes('stove'));
+          } else if (selectedCategory === 'KETTLE_MIXER') {
+            list = list.filter(p => p.category === 'Electric Kettles' || p.category === 'Mixer Grinders' || p.category === 'Appliances' || p.name.toLowerCase().includes('kettle') || p.name.toLowerCase().includes('mixer') || p.name.toLowerCase().includes('fryer'));
+          } else if (selectedCategory === 'SPARES') {
+            list = list.filter(p => p.category === 'Spares & Gaskets' || p.category === 'Accessories' || p.name.toLowerCase().includes('gaskit') || p.name.toLowerCase().includes('lighter'));
+          }
+        }
+        if (itemSearch.trim()) {
+          const q = itemSearch.toLowerCase();
+          list = list.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            p.sku.toLowerCase().includes(q) ||
+            (p.hsn && p.hsn.toLowerCase().includes(q)) ||
+            (p.category && p.category.toLowerCase().includes(q))
+          );
+        }
+        return list;
+      }, [products, itemSearch, selectedCategory]);
 
       // Distance calculation
       const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -11381,12 +11415,12 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
               </div>
 
               {/* Client Selection (Madhav: 558 Parties | Shivom: 62 Dealers) */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>Select Client Account</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-mono">
-                      ({currentClientList.length} {currentFirmKey === 'MADHAV' ? 'GST Parties' : 'Non-GST Dealers'})
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>1. Party Account</span>
+                    <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[11px] font-mono font-bold">
+                      {currentFirmKey === 'MADHAV' ? '558 GST Parties' : '62 Non-GST Dealers'}
                     </span>
                   </label>
                   <button onClick={() => setActiveModal('SALES_RETURN')} className="text-xs font-bold text-rose-600 hover:underline flex items-center">
@@ -11394,73 +11428,147 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                   </button>
                 </div>
 
-                {/* Instant Search Bar */}
-                <div className="mb-2 relative">
-                  <input
-                    type="text"
-                    value={clientSearch}
-                    onChange={(e) => setClientSearch(e.target.value)}
-                    placeholder={`🔍 Search in ${currentFirm.name} by party, town or phone...`}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {clientSearch && (
-                    <button
-                      onClick={() => setClientSearch("")}
-                      className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 font-bold"
-                    >
-                      &times;
-                    </button>
+                {/* Autocomplete Search Bar */}
+                <div className="relative">
+                  <div className="flex items-center bg-slate-50 border border-slate-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 rounded-xl px-3 py-2 transition-all">
+                    <span className="text-slate-400 mr-2 text-sm">🔍</span>
+                    <input
+                      type="text"
+                      value={clientSearch}
+                      onFocus={() => setIsSelectingParty(true)}
+                      onChange={(e) => {
+                        setClientSearch(e.target.value);
+                        setIsSelectingParty(true);
+                      }}
+                      placeholder="Search party by name, town/area, phone, or GSTIN..."
+                      className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
+                    />
+                    {clientSearch && (
+                      <button
+                        onClick={() => { setClientSearch(""); setIsSelectingParty(false); }}
+                        className="text-xs text-slate-400 hover:text-slate-600 font-bold px-1.5"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Autocomplete Results Dropdown */}
+                  {isSelectingParty && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-2xl shadow-2xl z-40 max-h-72 overflow-y-auto no-scrollbar divide-y divide-slate-100">
+                      <div className="p-2 bg-slate-50 flex items-center justify-between text-[11px] text-slate-500 font-semibold sticky top-0 border-b border-slate-200">
+                        <span>Showing {Math.min(25, filteredClients.length)} of {filteredClients.length} matching parties:</span>
+                        <button
+                          onClick={() => setIsSelectingParty(false)}
+                          className="text-rose-600 hover:underline font-bold"
+                        >
+                          Close ✕
+                        </button>
+                      </div>
+
+                      {filteredClients.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-400">
+                          No party found matching "{clientSearch}". Check spelling or search by town.
+                        </div>
+                      ) : (
+                        filteredClients.slice(0, 25).map(c => (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedClient(c);
+                              setClientSearch("");
+                              setIsSelectingParty(false);
+                            }}
+                            className={`p-3 cursor-pointer transition-all hover:bg-blue-50/80 flex items-center justify-between ${
+                              selectedClient.id === c.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                            }`}
+                          >
+                            <div className="min-w-0 pr-2">
+                              <div className="font-bold text-xs text-slate-800 truncate">
+                                {c.company_name}
+                              </div>
+                              <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                                📍 {c.area || c.address || 'Nagpur'} {c.phone ? `• 📞 ${c.phone}` : ''}
+                              </div>
+                              {c.gstin && (
+                                <div className="text-[10px] font-mono text-blue-700 font-semibold">
+                                  GST: {c.gstin}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right whitespace-nowrap">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">
+                                ₹{c.outstanding.toLocaleString()} Due
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   )}
                 </div>
 
-                <select
-                  value={selectedClient.id}
-                  onChange={(e) => {
-                    const found = currentClientList.find(c => c.id === e.target.value);
-                    if (found) setSelectedClient(found);
-                  }}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {filteredClients.slice(0, 100).map(c => (
-                    <option key={c.id} value={c.id}>
-                      [{c.type || 'Party'}] {c.company_name} {c.gstin ? `(${c.gstin})` : (c.area ? `[${c.area}]` : '')} - Due: ₹{c.outstanding.toLocaleString()}
-                    </option>
-                  ))}
-                  {filteredClients.length > 100 && (
-                    <option disabled>... and {filteredClients.length - 100} more parties (use search box above)</option>
-                  )}
-                </select>
+                {/* Selected Party Summary Card */}
+                <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/40 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-extrabold text-sm text-slate-900">{selectedClient.company_name}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-900">
+                          {selectedClient.type || (currentFirmKey === 'MADHAV' ? 'B2B Client' : 'Retail Dealer')}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-600 mt-0.5">
+                        📍 {selectedClient.address || selectedClient.area || 'Nagpur'} {selectedClient.phone ? `| 📞 ${selectedClient.phone}` : ''}
+                      </div>
+                      {selectedClient.gstin && (
+                        <div className="text-xs font-mono font-bold text-blue-800">
+                          GSTIN: {selectedClient.gstin}
+                        </div>
+                      )}
+                    </div>
 
-                <div className={`mt-3 p-2.5 rounded-xl text-xs font-medium flex items-center justify-between ${
-                  isWithin100m ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
-                }`}>
-                  <div className="flex items-center space-x-2">
-                    <Icon name={isWithin100m ? 'shield-check' : 'alert'} className="w-4 h-4" />
-                    <span>
-                      {isWithin100m
-                        ? `100m Geo-Fence Match: Distance ${clientDistance}m (Shop Verified)`
-                        : `Distance: ${clientDistance}m (>100m boundary, marked as Remote/Phone)`}
+                    <button
+                      onClick={() => { setIsSelectingParty(true); setClientSearch(""); }}
+                      className="px-2.5 py-1.5 rounded-lg bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 font-bold text-[11px] shadow-sm whitespace-nowrap"
+                    >
+                      🔄 Change Party
+                    </button>
+                  </div>
+
+                  {/* Geofence Status Badge */}
+                  <div className={`p-2 rounded-lg text-xs font-medium flex items-center justify-between ${
+                    isWithin100m ? 'bg-emerald-100/70 text-emerald-900' : 'bg-amber-100/70 text-amber-900'
+                  }`}>
+                    <div className="flex items-center space-x-1.5">
+                      <Icon name={isWithin100m ? 'shield-check' : 'alert'} className="w-4 h-4" />
+                      <span>
+                        {isWithin100m
+                          ? `100m Geo-Verified: Distance ${clientDistance}m (Shop Visit Verified)`
+                          : `Distance: ${clientDistance}m (>100m - Remote / Phone Order)`}
+                      </span>
+                    </div>
+                    <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-white shadow-xs">
+                      {isWithin100m ? 'FIELD VISIT' : 'PHONE ORDER'}
                     </span>
                   </div>
-                  <span className="font-bold px-2 py-0.5 rounded bg-white text-xs shadow-sm">
-                    {isWithin100m ? 'FIELD VISIT' : 'PHONE ORDER'}
-                  </span>
-                </div>
 
-                <div className="mt-3 bg-slate-50 p-3 rounded-xl text-xs space-y-1.5">
-                  <div className="flex justify-between text-slate-600">
-                    <span>Credit Limit: ₹{selectedClient.credit_limit.toLocaleString()}</span>
-                    <span className="font-bold text-slate-800">Credit Days: {selectedClient.credit_days} Days</span>
-                  </div>
-                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${selectedClient.outstanding / selectedClient.credit_limit > 0.8 ? 'bg-rose-500' : 'bg-blue-600'}`}
-                      style={{ width: `${Math.min(100, (selectedClient.outstanding / selectedClient.credit_limit) * 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-slate-500 font-medium">
-                    <span>Outstanding Due: <b className="text-slate-800">₹{selectedClient.outstanding.toLocaleString()}</b></span>
-                    <span>Available Credit: ₹{Math.max(0, selectedClient.credit_limit - selectedClient.outstanding).toLocaleString()}</span>
+                  {/* Ledger Balance & Credit Limit */}
+                  <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Credit Limit: <b>₹{selectedClient.credit_limit.toLocaleString()}</b></span>
+                      <span>Credit Days: <b>{selectedClient.credit_days} Days</b></span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${selectedClient.outstanding / selectedClient.credit_limit > 0.8 ? 'bg-rose-500' : 'bg-blue-600'}`}
+                        style={{ width: `${Math.min(100, (selectedClient.outstanding / selectedClient.credit_limit) * 100)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="font-bold text-rose-700">Previous Outstanding: ₹{selectedClient.outstanding.toLocaleString()}</span>
+                      <span className="font-medium text-emerald-700">Available: ₹{Math.max(0, selectedClient.credit_limit - selectedClient.outstanding).toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -11497,97 +11605,193 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                 </div>
               </div>
 
-              {/* 3-Way Stock Product Booking Catalog */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Book Order Products</h3>
-                  <span className="text-xs text-slate-500 font-medium">Live 3-Way Stock Matrix</span>
+              {/* Dedicated Item Search & Product Selector Box */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center space-x-1.5">
+                      <span>2. Select Products</span>
+                      <span className="text-[11px] font-normal text-slate-500 font-mono">(Live 3-Way Stock)</span>
+                    </h3>
+                  </div>
+                  <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                    {cart.length > 0 ? `${cart.reduce((s, it) => s + it.quantity, 0)} Items in Bill` : 'Cart Empty'}
+                  </span>
                 </div>
 
-                <div className="space-y-3">
-                  {products.map(prod => {
-                    const available = prod.physical - prod.booked;
-                    const isOutOfStock = available <= 0;
-                    const cartItem = cart.find(ci => ci.product_id === prod.id);
+                {/* Item Search Input */}
+                <div className="relative">
+                  <div className="flex items-center bg-slate-50 border border-slate-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 rounded-xl px-3 py-2 transition-all">
+                    <span className="text-slate-400 mr-2 text-sm">🔍</span>
+                    <input
+                      type="text"
+                      value={itemSearch}
+                      onChange={(e) => setItemSearch(e.target.value)}
+                      placeholder="Type product name (e.g. Cooker, 3L, Induction, Gas, Mixer, Gasket)..."
+                      className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
+                    />
+                    {itemSearch && (
+                      <button
+                        onClick={() => setItemSearch("")}
+                        className="text-xs text-slate-400 hover:text-slate-600 font-bold px-1.5"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-                    return (
-                      <div key={prod.id} className="p-3 rounded-xl border border-slate-200 hover:border-slate-300 transition-all bg-slate-50/40">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-bold text-sm text-slate-800">{prod.name}</div>
-                            <div className="text-xs text-slate-500 font-mono">SKU: {prod.sku} | HSN: {prod.hsn}</div>
-                            <div className="text-xs font-bold text-blue-600 mt-1">₹{prod.price.toLocaleString()} + {invoiceSeries === 'GST_INVOICE' && currentFirm.isGst ? `${prod.tax_rate}% GST` : '0% Tax'}</div>
-                          </div>
+                {/* Quick Category Filter Pills */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pb-1 text-xs font-medium">
+                  {[
+                    { id: 'ALL', label: 'All Items (25)' },
+                    { id: 'COOKER', label: '🍲 Cookers (10)' },
+                    { id: 'INDUCTION', label: '⚡ Induction (3)' },
+                    { id: 'GAS_STOVE', label: '🔥 Gas Stoves (4)' },
+                    { id: 'KETTLE_MIXER', label: '☕ Kettles & Mixers (5)' },
+                    { id: 'SPARES', label: '🔧 Spares & Parts (3)' }
+                  ].map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        setShowAllProducts(true);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all ${
+                        selectedCategory === cat.id
+                          ? 'bg-blue-600 text-white font-bold shadow-sm'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
 
-                          <div className="text-right space-y-1">
-                            <div className="flex items-center space-x-1 text-[11px]">
-                              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold" title="Physical stock in warehouse">
-                                Phys: {prod.physical}
-                              </span>
-                              <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-semibold" title="Booked stock">
-                                Book: {prod.booked}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded font-bold ${
-                                available > 10 ? 'bg-emerald-100 text-emerald-800' : available > 0 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                              }`} title="Available for sale">
-                                Avail: {available}
-                              </span>
-                            </div>
+                {/* Dynamic Product Filtering Area */}
+                {(!itemSearch.trim() && selectedCategory === 'ALL' && !showAllProducts) ? (
+                  <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 text-center space-y-2.5">
+                    <div className="text-2xl">📦</div>
+                    <div className="text-xs font-semibold text-slate-700">
+                      Type product name in the search box above or tap a category pill to pick products.
+                    </div>
+                    <div className="pt-1">
+                      <button
+                        onClick={() => setShowAllProducts(true)}
+                        className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 shadow-sm"
+                      >
+                        Or View All 25 Products
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                      <span>Showing <b>{filteredProducts.length}</b> matching items:</span>
+                      {showAllProducts && selectedCategory === 'ALL' && !itemSearch && (
+                        <button
+                          onClick={() => setShowAllProducts(false)}
+                          className="text-blue-600 hover:underline font-semibold"
+                        >
+                          Collapse list
+                        </button>
+                      )}
+                    </div>
 
-                            <div className="pt-1">
-                              {cartItem ? (
-                                <div className="flex items-center justify-end space-x-2">
-                                  <button onClick={() => addToCart(prod, -1)} className="w-7 h-7 rounded-lg bg-slate-200 text-slate-800 font-bold">-</button>
-                                  <span className="font-bold text-sm text-slate-800 px-1">{cartItem.quantity}</span>
-                                  <button onClick={() => addToCart(prod, 1)} className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold">+</button>
-                                </div>
-                              ) : (
-                                <button
-                                  disabled={isOutOfStock}
-                                  onClick={() => addToCart(prod, 1)}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                    isOutOfStock
-                                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-                                  }`}
-                                >
-                                  {isOutOfStock ? 'Out of Stock' : '+ Add Item'}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Substitute Products Flow */}
-                        {isOutOfStock && prod.substitute_ids && prod.substitute_ids.length > 0 && (
-                          <div className="mt-2.5 p-2 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
-                            <div className="font-bold flex items-center space-x-1">
-                              <Icon name="alert" className="w-3.5 h-3.5 text-amber-600" />
-                              <span>Alternative In-Stock Substitutes:</span>
-                            </div>
-                            <div className="mt-1 space-y-1">
-                              {prod.substitute_ids.map(subId => {
-                                const subProd = products.find(p => p.id === subId);
-                                if (!subProd || (subProd.physical - subProd.booked) <= 0) return null;
-                                return (
-                                  <div key={subId} className="flex items-center justify-between bg-white px-2 py-1 rounded border border-amber-200">
-                                    <span>{subProd.name} (₹{subProd.price}) - <b>{subProd.physical - subProd.booked} in stock</b></span>
-                                    <button
-                                      onClick={() => addToCart(subProd, 1)}
-                                      className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[11px]"
-                                    >
-                                      + Switch
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
+                    {filteredProducts.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+                        No product matches "{itemSearch}". Try searching "Cooker", "Induction", or "Stove".
                       </div>
-                    );
-                  })}
-                </div>
+                    ) : (
+                      filteredProducts.map(prod => {
+                        const available = prod.physical - prod.booked;
+                        const isOutOfStock = available <= 0;
+                        const cartItem = cart.find(ci => ci.product_id === prod.id);
+
+                        return (
+                          <div key={prod.id} className="p-3 rounded-xl border border-slate-200 hover:border-slate-300 transition-all bg-slate-50/50">
+                            <div className="flex justify-between items-start">
+                              <div className="pr-2">
+                                <div className="font-bold text-xs text-slate-800">{prod.name}</div>
+                                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                  SKU: {prod.sku} | HSN: {prod.hsn}
+                                </div>
+                                <div className="text-xs font-bold text-blue-700 mt-1">
+                                  ₹{prod.price.toLocaleString()} + {invoiceSeries === 'GST_INVOICE' && currentFirm.isGst ? `${prod.tax_rate}% GST` : '0% Tax'}
+                                </div>
+                              </div>
+
+                              <div className="text-right space-y-1.5 flex-shrink-0">
+                                <div className="flex items-center justify-end space-x-1 text-[10px]">
+                                  <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold" title="Physical stock in warehouse">
+                                    P: {prod.physical}
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-semibold" title="Booked stock">
+                                    B: {prod.booked}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded font-bold ${
+                                    available > 10 ? 'bg-emerald-100 text-emerald-800' : available > 0 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                                  }`} title="Available for sale">
+                                    Avail: {available}
+                                  </span>
+                                </div>
+
+                                <div className="pt-0.5">
+                                  {cartItem ? (
+                                    <div className="flex items-center justify-end space-x-1.5">
+                                      <button onClick={() => addToCart(prod, -1)} className="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs">-</button>
+                                      <span className="font-bold text-xs text-slate-800 px-1">{cartItem.quantity}</span>
+                                      <button onClick={() => addToCart(prod, 1)} className="w-6 h-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs">+</button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      disabled={isOutOfStock}
+                                      onClick={() => addToCart(prod, 1)}
+                                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                                        isOutOfStock
+                                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                                      }`}
+                                    >
+                                      {isOutOfStock ? 'Out of Stock' : '+ Add Item'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Substitute Products Flow */}
+                            {isOutOfStock && prod.substitute_ids && prod.substitute_ids.length > 0 && (
+                              <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
+                                <div className="font-bold flex items-center space-x-1">
+                                  <Icon name="alert" className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>In-Stock Substitute Available:</span>
+                                </div>
+                                <div className="mt-1 space-y-1">
+                                  {prod.substitute_ids.map(subId => {
+                                    const subProd = products.find(p => p.id === subId);
+                                    if (!subProd || (subProd.physical - subProd.booked) <= 0) return null;
+                                    return (
+                                      <div key={subId} className="flex items-center justify-between bg-white px-2 py-1 rounded border border-amber-200">
+                                        <span>{subProd.name} (₹{subProd.price}) - <b>{subProd.physical - subProd.booked} Avail</b></span>
+                                        <button
+                                          onClick={() => addToCart(subProd, 1)}
+                                          className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[11px]"
+                                        >
+                                          + Switch
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Order Cart & Formula Summary */}
