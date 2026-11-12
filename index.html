@@ -11299,6 +11299,87 @@
       `;
     }
 
+        const INITIAL_ORDERS = [
+      {
+        id: "ord-1731405001",
+        status: "BOOKED",
+        firm_id: "MADHAV",
+        firm_name: "MADHAV ENTERPRISES",
+        salesman_name: "Gopal Ambagade",
+        salesman_phone: "+91 90754 79839",
+        invoice_number: "INV/26-27/0499",
+        invoice_series: "GST_INVOICE",
+        client_id: "gst-002",
+        client_name: "A to z appliances",
+        client_phone: "+91 98225 74142",
+        order_channel: "FIELD_VISIT",
+        is_geofence_verified: true,
+        order_date: "2026-11-12",
+        vehicle_note: "Awaiting tempo dispatch from Indora Godown",
+        items: [
+          { product_id: "p1", name: "SS CLASSIC OL COOKER 2L", sku: "CKR-SS-2L", hsn: "73239390", quantity: 2, price: 1095, tax_rate: 18 }
+        ],
+        currentOrderTotal: 2584,
+        totalTax: 394,
+        previousOutstanding: 0,
+        paidToday: 500,
+        netBalanceDue: 2084
+      },
+      {
+        id: "ord-1731405002",
+        status: "DISPATCHED",
+        firm_id: "MADHAV",
+        firm_name: "MADHAV ENTERPRISES",
+        salesman_name: "Gopal Ambagade",
+        salesman_phone: "+91 90754 79839",
+        invoice_number: "INV/26-27/0500",
+        invoice_series: "GST_INVOICE",
+        client_id: "gst-004",
+        client_name: "Aakash Bartan Bhandar",
+        client_phone: "+91 94228 12345",
+        order_channel: "FIELD_VISIT",
+        is_geofence_verified: true,
+        order_date: "2026-11-12",
+        dispatched_at: "11:30 AM",
+        vehicle_note: "Tempo MH-31-DC-4421 (Driver: Ramesh 9823145678)",
+        items: [
+          { product_id: "p6", name: "2 Burner Eco Gas Stove", sku: "GAS-2B-ECO", hsn: "73211110", quantity: 1, price: 1850, tax_rate: 18 }
+        ],
+        currentOrderTotal: 2183,
+        totalTax: 333,
+        previousOutstanding: 1200,
+        paidToday: 1000,
+        netBalanceDue: 2383
+      },
+      {
+        id: "ord-1731405003",
+        status: "DELIVERED",
+        firm_id: "SHIVOM",
+        firm_name: "SHIVOM SALES & SERVICE",
+        salesman_name: "Vikram Sing Chohan",
+        salesman_phone: "+91 88884 12345",
+        invoice_number: "EST/26-27/0184",
+        invoice_series: "RETAIL_ESTIMATE",
+        client_id: "dealer-001",
+        client_name: "Radhe Krishna Home Needs",
+        client_phone: "+91 93701 44556",
+        order_channel: "PHONE_CALL",
+        is_geofence_verified: false,
+        order_date: "2026-11-11",
+        dispatched_at: "03:15 PM",
+        delivered_at: "05:40 PM",
+        vehicle_note: "Delivered to shop & payment ₹3,500 received via GPay",
+        items: [
+          { product_id: "p13", name: "Mixer Grinder 750W", sku: "MXR-750W-3J", hsn: "85094010", quantity: 2, price: 1750, tax_rate: 0 }
+        ],
+        currentOrderTotal: 3500,
+        totalTax: 0,
+        previousOutstanding: 2500,
+        paidToday: 3500,
+        netBalanceDue: 2500
+      }
+    ];
+
     function App() {
       const [currentFirmKey, setCurrentFirmKey] = useState("MADHAV"); // 'MADHAV' or 'SHIVOM'
       const [role, setRole] = useState("SALES_REP"); // 'SALES_REP' or 'ADMIN'
@@ -11367,7 +11448,30 @@
           }
         }
       }, [lastGeneratedOrder, selectedClient]);
-      const [ordersHistory, setOrdersHistory] = useState([]);
+      const [ordersHistory, setOrdersHistory] = useState(INITIAL_ORDERS);
+      const [orderFilterStatus, setOrderFilterStatus] = useState('ALL'); // 'ALL', 'BOOKED', 'DISPATCHED', 'DELIVERED'
+      const [orderSearchQuery, setOrderSearchQuery] = useState('');
+      const [dispatchModalOrder, setDispatchModalOrder] = useState(null);
+      const [vehicleNoteInput, setVehicleNoteInput] = useState('');
+
+      // New Party Form State
+      const [newPartyForm, setNewPartyForm] = useState({
+        firm: 'MADHAV',
+        name: '',
+        phone: '',
+        area: '',
+        address: '',
+        gstin: '',
+        creditLimit: 10000
+      });
+
+      // Stock Inward Form State
+      const [stockInwardForm, setStockInwardForm] = useState({
+        productId: '',
+        quantity: 20,
+        supplierRef: '',
+        date: new Date().toISOString().split('T')[0]
+      });
 
       // Filtered clients list based on search bar
       const filteredClients = useMemo(() => {
@@ -11589,6 +11693,10 @@ Do you want to proceed and book order?`);
 
         const newOrder = {
           id: `ord-${Date.now()}`,
+          status: 'BOOKED',
+          dispatched_at: null,
+          delivered_at: null,
+          vehicle_note: 'Awaiting tempo dispatch from Indora Godown',
           firm_id: currentFirmKey,
           firm_name: currentFirm.name,
           salesman_name: activeSalesman.name,
@@ -11744,17 +11852,29 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                     </p>
                   </div>
                   
-                  <button
-                    onClick={togglePunch}
-                    className={`px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center space-x-1.5 ${
-                      isPunchedIn
-                        ? 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
-                    }`}
-                  >
-                    <Icon name="clock" className="w-4 h-4" />
-                    <span>{isPunchedIn ? `Punch Out (${punchInTime})` : 'GPS Punch In'}</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRole('ADMIN');
+                        setActiveAdminTab('DISPATCH');
+                      }}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 flex items-center space-x-1.5 shadow-sm transition-all whitespace-nowrap"
+                    >
+                      <span>🚚 Orders ({ordersHistory.length})</span>
+                    </button>
+                    <button
+                      onClick={togglePunch}
+                      className={`px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center space-x-1.5 ${
+                        isPunchedIn
+                          ? 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
+                      }`}
+                    >
+                      <Icon name="clock" className="w-4 h-4" />
+                      <span>{isPunchedIn ? `Punch Out (${punchInTime})` : 'GPS Punch In'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {isPunchedIn && (
@@ -11867,27 +11987,47 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
 
                 {/* Autocomplete Search Bar */}
                 <div className="relative">
-                  <div className="flex items-center bg-slate-50 border border-slate-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 rounded-xl px-3 py-2 transition-all">
-                    <span className="text-slate-400 mr-2 text-sm">🔍</span>
-                    <input
-                      type="text"
-                      value={clientSearch}
-                      onFocus={() => setIsSelectingParty(true)}
-                      onChange={(e) => {
-                        setClientSearch(e.target.value);
-                        setIsSelectingParty(true);
+                  <div className="flex items-center space-x-2">
+                    <div className="relative flex-1 flex items-center bg-slate-50 border border-slate-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 rounded-xl px-3 py-2 transition-all">
+                      <span className="text-slate-400 mr-2 text-sm">🔍</span>
+                      <input
+                        type="text"
+                        value={clientSearch}
+                        onFocus={() => setIsSelectingParty(true)}
+                        onChange={(e) => {
+                          setClientSearch(e.target.value);
+                          setIsSelectingParty(true);
+                        }}
+                        placeholder="Search party by name, town/area, phone, or GSTIN..."
+                        className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
+                      />
+                      {clientSearch && (
+                        <button
+                          onClick={() => { setClientSearch(""); setIsSelectingParty(false); }}
+                          className="text-xs text-slate-400 hover:text-slate-600 font-bold px-1.5"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewPartyForm({
+                          firm: currentFirmKey,
+                          name: clientSearch || '',
+                          phone: '',
+                          area: '',
+                          address: '',
+                          gstin: '',
+                          creditLimit: 10000
+                        });
+                        setActiveModal('ADD_PARTY');
                       }}
-                      placeholder="Search party by name, town/area, phone, or GSTIN..."
-                      className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
-                    />
-                    {clientSearch && (
-                      <button
-                        onClick={() => { setClientSearch(""); setIsSelectingParty(false); }}
-                        className="text-xs text-slate-400 hover:text-slate-600 font-bold px-1.5"
-                      >
-                        ✕
-                      </button>
-                    )}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center space-x-1 shadow-sm shrink-0 whitespace-nowrap"
+                    >
+                      <span>➕ New Party</span>
+                    </button>
                   </div>
 
                   {/* Autocomplete Results Dropdown */}
@@ -12326,43 +12466,56 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
           {role === 'ADMIN' && (
             <main className="p-4 md:p-6 space-y-6">
               {/* Admin Subtabs */}
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar">
                 <button
                   onClick={() => setActiveAdminTab("OVERVIEW")}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    activeAdminTab === 'OVERVIEW' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    activeAdminTab === 'OVERVIEW' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
                   📊 Consolidated Analytics
                 </button>
                 <button
-                  onClick={() => setActiveAdminTab("COLLECTIONS")}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    activeAdminTab === 'COLLECTIONS' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                  onClick={() => setActiveAdminTab("DISPATCH")}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+                    activeAdminTab === 'DISPATCH'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-200'
                   }`}
                 >
-                  💰 Daily Cash & Expenses Register
+                  <span>🚚 Booked Orders & Dispatch</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-900 font-black">
+                    {ordersHistory.filter(o => o.status === 'BOOKED').length}
+                  </span>
                 </button>
                 <button
                   onClick={() => setActiveAdminTab("INVENTORY")}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    activeAdminTab === 'INVENTORY' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    activeAdminTab === 'INVENTORY' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
                   📦 3-Way Live Stock Hub
                 </button>
                 <button
                   onClick={() => setActiveAdminTab("OVERDUE")}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
                     activeAdminTab === 'OVERDUE'
                       ? 'bg-rose-600 text-white shadow-sm'
                       : 'bg-white text-rose-700 hover:bg-rose-50 border border-rose-200'
                   }`}
                 >
                   <span>🔴 Overdue Recovery & Reminders</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-rose-700 font-black">
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-100 text-rose-800 font-black">
                     {overdueClients.length}
                   </span>
+                </button>
+                <button
+                  onClick={() => setActiveAdminTab("COLLECTIONS")}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    activeAdminTab === 'COLLECTIONS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  💰 Daily Cash Register
                 </button>
               </div>
 
@@ -12523,7 +12676,263 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                 </div>
               )}
 
-              {/* TAB 4: OVERDUE RECOVERY & 1-CLICK REMINDERS */}
+                            {/* TAB 5: BOOKED ORDERS & DISPATCH PIPELINE */}
+              {activeAdminTab === 'DISPATCH' && (
+                <div className="space-y-4">
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl shadow-sm">
+                      <div className="text-[11px] font-bold text-amber-700 uppercase">🟡 Booked (Awaiting Dispatch)</div>
+                      <div className="text-2xl font-black text-amber-900 mt-1">
+                        {ordersHistory.filter(o => o.status === 'BOOKED').length} Orders
+                      </div>
+                      <div className="text-[11px] font-semibold text-amber-700 mt-0.5">
+                        ₹{ordersHistory.filter(o => o.status === 'BOOKED').reduce((acc, o) => acc + (o.currentOrderTotal || 0), 0).toLocaleString()} Value
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-2xl shadow-sm">
+                      <div className="text-[11px] font-bold text-blue-700 uppercase">🚚 Out for Delivery (In-Transit)</div>
+                      <div className="text-2xl font-black text-blue-900 mt-1">
+                        {ordersHistory.filter(o => o.status === 'DISPATCHED').length} Orders
+                      </div>
+                      <div className="text-[11px] font-semibold text-blue-700 mt-0.5">
+                        ₹{ordersHistory.filter(o => o.status === 'DISPATCHED').reduce((acc, o) => acc + (o.currentOrderTotal || 0), 0).toLocaleString()} Value
+                      </div>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl shadow-sm">
+                      <div className="text-[11px] font-bold text-emerald-700 uppercase">🟢 Delivered & Fulfilled</div>
+                      <div className="text-2xl font-black text-emerald-900 mt-1">
+                        {ordersHistory.filter(o => o.status === 'DELIVERED').length} Orders
+                      </div>
+                      <div className="text-[11px] font-semibold text-emerald-700 mt-0.5">
+                        ₹{ordersHistory.filter(o => o.status === 'DELIVERED').reduce((acc, o) => acc + (o.currentOrderTotal || 0), 0).toLocaleString()} Value
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl shadow-sm">
+                      <div className="text-[11px] font-bold text-slate-600 uppercase">📦 Total Booked Volume</div>
+                      <div className="text-2xl font-black text-slate-800 mt-1">
+                        {ordersHistory.length} Orders
+                      </div>
+                      <div className="text-[11px] font-semibold text-slate-600 mt-0.5">
+                        ₹{ordersHistory.reduce((acc, o) => acc + (o.currentOrderTotal || 0), 0).toLocaleString()} Total
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filter Pills & Search */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterStatus('ALL')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${orderFilterStatus === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                          All Orders ({ordersHistory.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterStatus('BOOKED')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${orderFilterStatus === 'BOOKED' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'}`}
+                        >
+                          🟡 Booked ({ordersHistory.filter(o => o.status === 'BOOKED').length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterStatus('DISPATCHED')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${orderFilterStatus === 'DISPATCHED' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-800 hover:bg-blue-100'}`}
+                        >
+                          🚚 Dispatched ({ordersHistory.filter(o => o.status === 'DISPATCHED').length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterStatus('DELIVERED')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${orderFilterStatus === 'DELIVERED' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'}`}
+                        >
+                          🟢 Delivered ({ordersHistory.filter(o => o.status === 'DELIVERED').length})
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search Doc No, party or phone..."
+                          value={orderSearchQuery}
+                          onChange={(e) => setOrderSearchQuery(e.target.value)}
+                          className="w-full sm:w-64 p-2 pl-7 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-amber-600"
+                        />
+                        <span className="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
+                      </div>
+                    </div>
+
+                    {/* Orders List / Cards */}
+                    <div className="space-y-3 pt-2">
+                      {ordersHistory
+                        .filter(o => {
+                          if (orderFilterStatus !== 'ALL' && o.status !== orderFilterStatus) return false;
+                          if (orderSearchQuery) {
+                            const q = orderSearchQuery.toLowerCase();
+                            return (
+                              (o.invoice_number && o.invoice_number.toLowerCase().includes(q)) ||
+                              (o.client_name && o.client_name.toLowerCase().includes(q)) ||
+                              (o.client_phone && o.client_phone.includes(q))
+                            );
+                          }
+                          return true;
+                        })
+                        .map(order => {
+                          const isGst = order.firm_id === 'MADHAV';
+                          return (
+                            <div key={order.id} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all shadow-sm space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${isGst ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                    {isGst ? '🔵 MADHAV' : '🟢 SHIVOM'}
+                                  </span>
+                                  <span className="font-mono font-bold text-xs text-slate-900">{order.invoice_number}</span>
+                                  <span className="text-[11px] text-slate-400">· {order.order_date}</span>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                                    {order.order_channel === 'FIELD_VISIT' ? '📍 Field Visit' : '📞 Phone Call'}
+                                  </span>
+                                </div>
+
+                                {/* Status Badge */}
+                                <div className="flex items-center space-x-2">
+                                  {order.status === 'BOOKED' && (
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                                      🟡 Booked (Pending Dispatch)
+                                    </span>
+                                  )}
+                                  {order.status === 'DISPATCHED' && (
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-900 border border-blue-300">
+                                      🚚 Out for Delivery ({order.dispatched_at || 'In-Transit'})
+                                    </span>
+                                  )}
+                                  {order.status === 'DELIVERED' && (
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                      🟢 Delivered & Closed
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Customer & Items Details */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                <div>
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase">Customer / Party</div>
+                                  <div className="font-bold text-slate-800 text-sm">{order.client_name}</div>
+                                  <div className="text-slate-500 font-mono text-[11px]">📞 {order.client_phone || 'N/A'}</div>
+                                  <div className="text-[11px] text-slate-500">Rep: {order.salesman_name}</div>
+                                </div>
+
+                                <div>
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase">Ordered Products ({order.items ? order.items.length : 0})</div>
+                                  <div className="space-y-0.5 mt-0.5">
+                                    {(order.items || []).map((it, idx) => (
+                                      <div key={idx} className="text-slate-700 flex justify-between text-[11px]">
+                                        <span className="font-semibold">{it.quantity}x {it.name}</span>
+                                        <span className="font-mono text-slate-500">₹{(it.price * it.quantity).toLocaleString()}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1">
+                                  <div className="flex justify-between text-slate-600">
+                                    <span>Bill Amount:</span>
+                                    <span className="font-bold font-mono">₹{(order.currentOrderTotal || 0).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between text-emerald-700">
+                                    <span>Paid Today:</span>
+                                    <span className="font-bold font-mono">₹{(order.paidToday || 0).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between font-black text-rose-600 border-t border-slate-200 pt-1">
+                                    <span>Net Due:</span>
+                                    <span className="font-mono">₹{(order.netBalanceDue || 0).toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Vehicle Note if any */}
+                              {order.vehicle_note && (
+                                <div className="text-[11px] bg-amber-50/70 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-lg flex items-center space-x-1.5">
+                                  <span>🚚</span>
+                                  <span className="font-semibold">{order.vehicle_note}</span>
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setLastGeneratedOrder(order);
+                                      setInvoiceModalTab('A4_PREVIEW');
+                                      setActiveModal('WHATSAPP_SHARE');
+                                    }}
+                                    className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-lg flex items-center space-x-1 shadow-sm"
+                                  >
+                                    <span>📄 View / Print A4 Invoice</span>
+                                  </button>
+                                  <a
+                                    href={`https://wa.me/?text=${encodeURIComponent(getWhatsAppText(order))}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center space-x-1 shadow-sm"
+                                  >
+                                    <Icon name="whatsapp" className="w-3.5 h-3.5" />
+                                    <span>WhatsApp</span>
+                                  </a>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                  {order.status === 'BOOKED' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setDispatchModalOrder(order);
+                                        setVehicleNoteInput('');
+                                        setActiveModal('DISPATCH_NOTE');
+                                      }}
+                                      className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-lg flex items-center space-x-1.5 shadow"
+                                    >
+                                      <span>🚚 Mark Dispatched (माल रवाना करा)</span>
+                                    </button>
+                                  )}
+                                  {order.status === 'DISPATCHED' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOrdersHistory(prev => prev.map(ord => {
+                                          if (ord.id === order.id) {
+                                            return {
+                                              ...ord,
+                                              status: 'DELIVERED',
+                                              delivered_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                              vehicle_note: ord.vehicle_note + ' (Delivered successfully)'
+                                            };
+                                          }
+                                          return ord;
+                                        }));
+                                        alert(`✅ ऑर्डर पोहोचली (Delivered): ${order.client_name}!`);
+                                      }}
+                                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-lg flex items-center space-x-1.5 shadow"
+                                    >
+                                      <span>✅ Mark Delivered (माल पोहोचला)</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+{/* TAB 4: OVERDUE RECOVERY & 1-CLICK REMINDERS */}
               {activeAdminTab === 'OVERDUE' && (
                 <div className="space-y-4">
                   {/* Top Stats Cards */}
@@ -12672,8 +13081,27 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
               {/* TAB 3: INVENTORY HUB */}
               {activeAdminTab === 'INVENTORY' && (
                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                  <h2 className="text-base font-bold text-slate-800 mb-1">Live 3-Way Stock Management Hub</h2>
-                  <p className="text-xs text-slate-500 mb-4">Physical vs Booked vs Available for Sale inventory tracking</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-800">Live 3-Way Stock Management Hub</h2>
+                      <p className="text-xs text-slate-500">Physical vs Booked vs Available for Sale inventory tracking</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStockInwardForm({
+                          productId: products[0] ? products[0].id : '',
+                          quantity: 20,
+                          supplierRef: '',
+                          date: new Date().toISOString().split('T')[0]
+                        });
+                        setActiveModal('STOCK_INWARD');
+                      }}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-sm shrink-0 self-start sm:self-auto"
+                    >
+                      <span>➕ Stock Inward (माल आवक)</span>
+                    </button>
+                  </div>
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs text-slate-700">
@@ -12794,7 +13222,366 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
             </div>
           )}
 
-          {/* MODAL 2: SALES RETURN */}
+                    {/* MODAL 5: ADD NEW PARTY */}
+          {activeModal === 'ADD_PARTY' && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] overflow-y-auto">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                      ➕
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">Add New Dealer / Party (नवीन पार्टी)</h3>
+                      <p className="text-xs text-slate-500">Register new client to database</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Select Firm Series</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewPartyForm(prev => ({ ...prev, firm: 'MADHAV' }))}
+                        className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
+                          newPartyForm.firm === 'MADHAV' ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm' : 'border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        🔵 Madhav (GST)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewPartyForm(prev => ({ ...prev, firm: 'SHIVOM' }))}
+                        className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
+                          newPartyForm.firm === 'SHIVOM' ? 'border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        🟢 Shivom (Non-GST)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Shop / Firm Name (दुकान / पार्टीचे नाव) *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Shree Ganesh Electronics & Appliances"
+                      value={newPartyForm.name}
+                      onChange={(e) => setNewPartyForm({ ...newPartyForm, name: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-bold text-slate-800"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-600 font-bold mb-1">Phone Number (मोबाईल) *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="10-digit mobile"
+                        value={newPartyForm.phone}
+                        onChange={(e) => setNewPartyForm({ ...newPartyForm, phone: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-bold text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-600 font-bold mb-1">Area / Town (गाव / परिसर) *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Itwari, Kamptee, Wardha"
+                        value={newPartyForm.area}
+                        onChange={(e) => setNewPartyForm({ ...newPartyForm, area: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-bold text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  {newPartyForm.firm === 'MADHAV' && (
+                    <div>
+                      <label className="block text-slate-600 font-bold mb-1">GSTIN Number (१५ अंकी GST)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 27ABCDE1234F1Z5 (optional if unreg)"
+                        value={newPartyForm.gstin}
+                        onChange={(e) => setNewPartyForm({ ...newPartyForm, gstin: e.target.value.toUpperCase() })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-mono font-bold text-slate-800 uppercase"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Full Shop Address (पत्ता)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Main Market, Near Gandhi Putla, Indora"
+                      value={newPartyForm.address}
+                      onChange={(e) => setNewPartyForm({ ...newPartyForm, address: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Credit Limit (क्रेडिट मर्यादा)</label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        value={newPartyForm.creditLimit}
+                        onChange={(e) => setNewPartyForm({ ...newPartyForm, creditLimit: Number(e.target.value) })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-bold text-slate-800"
+                      />
+                      <span className="text-xs text-slate-500 whitespace-nowrap">Default ₹10,000</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal(null)}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newPartyForm.name.trim()) {
+                        alert('कृपया पार्टीचे नाव टाका!');
+                        return;
+                      }
+                      const newId = `custom-${Date.now()}`;
+                      const formattedParty = {
+                        id: newId,
+                        company_name: newPartyForm.name.trim(),
+                        owner_name: newPartyForm.name.trim(),
+                        phone: newPartyForm.phone.trim() || '9822000000',
+                        area: newPartyForm.area.trim() || 'Nagpur',
+                        address: newPartyForm.address.trim() || `${newPartyForm.area.trim() || 'Nagpur'}, Maharashtra`,
+                        gstin: newPartyForm.gstin.trim() || (newPartyForm.firm === 'MADHAV' ? '27UNREGDEALER' : ''),
+                        credit_limit: Number(newPartyForm.creditLimit) || 10000,
+                        credit_days: 15,
+                        outstanding: 0,
+                        is_gst: newPartyForm.firm === 'MADHAV'
+                      };
+
+                      if (newPartyForm.firm === 'MADHAV') {
+                        setGstClients(prev => [formattedParty, ...prev]);
+                        if (currentFirmKey !== 'MADHAV') setCurrentFirmKey('MADHAV');
+                      } else {
+                        setNonGstDealers(prev => [formattedParty, ...prev]);
+                        if (currentFirmKey !== 'SHIVOM') setCurrentFirmKey('SHIVOM');
+                      }
+
+                      setSelectedClient(formattedParty);
+                      setClientSearch('');
+                      setIsSelectingParty(false);
+                      setActiveModal(null);
+                      alert(`✅ नवीन पार्टी यशस्वीरित्या जोडली: ${formattedParty.company_name}!`);
+                    }}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow"
+                  >
+                    💾 Save & Select Party
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 6: STOCK INWARD (नवीन माल आवक) */}
+          {activeModal === 'STOCK_INWARD' && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                      📥
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">Stock Inward / माल आवक</h3>
+                      <p className="text-xs text-slate-500">Add physical inventory to warehouse</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Select Product (वस्तू निवडा) *</label>
+                    <select
+                      value={stockInwardForm.productId || (products[0] && products[0].id)}
+                      onChange={(e) => setStockInwardForm({ ...stockInwardForm, productId: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-bold text-slate-800"
+                    >
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (Physical: {p.physical} | Booked: {p.booked} | Avail: {p.physical - p.booked})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-slate-600 font-bold mb-1">Inward Quantity (नग) *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        required
+                        value={stockInwardForm.quantity}
+                        onChange={(e) => setStockInwardForm({ ...stockInwardForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-bold text-blue-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-600 font-bold mb-1">Inward Date (तारीख)</label>
+                      <input
+                        type="date"
+                        value={stockInwardForm.date}
+                        onChange={(e) => setStockInwardForm({ ...stockInwardForm, date: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Supplier / Tempo / Memo Reference (बिलाचा संदर्भ)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Hawkins Tempo #MH-31-AP-8921 / Factory Bill #419"
+                      value={stockInwardForm.supplierRef}
+                      onChange={(e) => setStockInwardForm({ ...stockInwardForm, supplierRef: e.target.value })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal(null)}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prodId = stockInwardForm.productId || (products[0] && products[0].id);
+                      const qty = Number(stockInwardForm.quantity) || 1;
+                      let targetProdName = '';
+                      setProducts(prev => prev.map(p => {
+                        if (p.id === prodId) {
+                          targetProdName = p.name;
+                          return { ...p, physical: p.physical + qty };
+                        }
+                        return p;
+                      }));
+                      setActiveModal(null);
+                      alert(`✅ गोदामात माल जमा झाला: ${targetProdName} (+${qty} नग Physical Stock मध्ये वाढवले)!`);
+                    }}
+                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow"
+                  >
+                    📥 Confirm & Add Stock
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 7: DISPATCH ORDER */}
+          {activeModal === 'DISPATCH_NOTE' && dispatchModalOrder && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+                      🚚
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">Dispatch Order (माल रवाना करा)</h3>
+                      <p className="text-xs text-slate-500">{dispatchModalOrder.invoice_number} · {dispatchModalOrder.client_name}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => { setActiveModal(null); setDispatchModalOrder(null); }} className="text-slate-400 hover:text-slate-600 font-bold text-lg">&times;</button>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                  <div className="font-bold text-slate-800">पार्टी: {dispatchModalOrder.client_name}</div>
+                  <div className="text-slate-600">रक्कम: ₹{(dispatchModalOrder.currentOrderTotal || 0).toLocaleString()} (Due: ₹{(dispatchModalOrder.netBalanceDue || 0).toLocaleString()})</div>
+                  <div className="text-slate-500">आयटम्स: {(dispatchModalOrder.items || []).map(it => `${it.quantity}x ${it.name}`).join(', ')}</div>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-600 font-bold mb-1">Delivery Vehicle / Driver / Note (गाडी / डिलिव्हरी नोट) *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Tempo MH-31-DC-4421 / Driver: Ramesh (9823000000)"
+                      value={vehicleNoteInput}
+                      onChange={(e) => setVehicleNoteInput(e.target.value)}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-amber-600 focus:bg-white text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => { setActiveModal(null); setDispatchModalOrder(null); }}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const note = vehicleNoteInput.trim() || 'Dispatched via Indora Delivery Van';
+                      // Update order status
+                      setOrdersHistory(prev => prev.map(ord => {
+                        if (ord.id === dispatchModalOrder.id) {
+                          return {
+                            ...ord,
+                            status: 'DISPATCHED',
+                            vehicle_note: note,
+                            dispatched_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          };
+                        }
+                        return ord;
+                      }));
+
+                      // Deduct physical & booked stock as goods leave warehouse
+                      setProducts(prev => prev.map(p => {
+                        const it = (dispatchModalOrder.items || []).find(ci => ci.product_id === p.id);
+                        if (it) {
+                          return {
+                            ...p,
+                            physical: Math.max(0, p.physical - it.quantity),
+                            booked: Math.max(0, p.booked - it.quantity)
+                          };
+                        }
+                        return p;
+                      }));
+
+                      setActiveModal(null);
+                      setDispatchModalOrder(null);
+                      setVehicleNoteInput('');
+                      alert(`🚚 ऑर्डर रवाना (Dispatched) झाली! गोदामातून माल वजा झाला आणि गाडी निघाली.`);
+                    }}
+                    className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow"
+                  >
+                    🚚 Confirm Dispatch
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+{/* MODAL 2: SALES RETURN */}
           {activeModal === 'SALES_RETURN' && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
