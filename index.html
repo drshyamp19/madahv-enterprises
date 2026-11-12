@@ -11066,58 +11066,37 @@
       const firmName = firm.name;
       const todayStr = new Date().toISOString().split('T')[0];
       const overdueDays = party.credit_days ? (party.credit_days + 10) : 25;
-      return (
-        "🙏 *नमस्कार, " + party.company_name + " जी!*
-
-" +
-        "आपले *" + firmName + ", नागपूर* कडील खात्याचा हिशोब खालीलप्रमाणे आहे:
-
-" +
-        "━━━━━━━━━━━━━━━━━━━━
-" +
-        "📌 *पेमेंट रिमाइंडर (Payment Reminder)*
-" +
-        "━━━━━━━━━━━━━━━━━━━━
-" +
-        "🏢 *फर्म:* " + firmName + "
-" +
-        "👤 *पार्टी:* " + party.company_name + "
-" +
-        "📍 *पत्ता:* " + (party.area || party.address || 'Nagpur') + "
-" +
-        "📅 *तारीख:* " + todayStr + "
-" +
-        "💰 *एकूण येणे बाकी (Outstanding Due):* *₹" + (party.outstanding || 0).toLocaleString() + "/-*
-" +
-        "⏳ *क्रेडिट मुदत:* " + (party.credit_days || 15) + " दिवस (मुदत संपली आहे - Overdue)
-" +
-        "━━━━━━━━━━━━━━━━━━━━
-
-" +
-        "💳 *बँक किंवा Google Pay / PhonePe द्वारे पेमेंट करण्यासाठी:*
-" +
-        "• बँक: State Bank of India / HDFC Bank
-" +
-        "• A/C Name: " + firmName + "
-" +
-        "• A/C No: 50200049281920
-" +
-        "• IFSC: HDFC0000123 (Indora Branch)
-" +
-        "• UPI ID: 7499477581@upi
-
-" +
-        "कृपया वरील थकीत रक्कम लवकरात लवकर जमा करून सहकार्य करावे, ही नम्र विनंती.
-" +
-        "(पेमेंट आधीच केले असल्यास कृपया ट्रान्झॅक्शन स्क्रीनशॉट पाठवावा.)
-
-" +
-        "धन्यवाद!
-" +
-        "*" + firm.salesman.name + "* (📞 " + firm.salesman.phone + ")
-" +
+      const lines = [
+        "🙏 *नमस्कार, " + party.company_name + " जी!*",
+        "",
+        "आपले *" + firmName + ", नागपूर* कडील खात्याचा हिशोब खालीलप्रमाणे आहे:",
+        "",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "📌 *पेमेंट रिमाइंडर (Payment Reminder)*",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "🏢 *फर्म:* " + firmName,
+        "👤 *पार्टी:* " + party.company_name,
+        "📍 *पत्ता:* " + (party.area || party.address || 'Nagpur'),
+        "📅 *तारीख:* " + todayStr,
+        "💰 *एकूण येणे बाकी (Outstanding Due):* *₹" + (party.outstanding || 0).toLocaleString() + "/-*",
+        "⏳ *क्रेडिट मुदत:* " + (party.credit_days || 15) + " दिवस (मुदत संपली आहे - Overdue)",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "",
+        "💳 *बँक किंवा Google Pay / PhonePe द्वारे पेमेंट करण्यासाठी:*",
+        "• बँक: State Bank of India / HDFC Bank",
+        "• A/C Name: " + firmName,
+        "• A/C No: 50200049281920",
+        "• IFSC: HDFC0000123 (Indora Branch)",
+        "• UPI ID: 7499477581@upi",
+        "",
+        "कृपया वरील थकीत रक्कम लवकरात लवकर जमा करून सहकार्य करावे, ही नम्र विनंती.",
+        "(पेमेंट आधीच केले असल्यास कृपया ट्रान्झॅक्शन स्क्रीनशॉट पाठवावा.)",
+        "",
+        "धन्यवाद!",
+        "*" + firm.salesman.name + "* (📞 " + firm.salesman.phone + ")",
         "*" + firmName + ", नागपूर*"
-      );
+      ];
+      return lines.join(String.fromCharCode(10));
     }
 
     function getPrintableInvoiceHtml(order, client) {
