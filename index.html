@@ -12328,6 +12328,19 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                 >
                   📦 3-Way Live Stock Hub
                 </button>
+                <button
+                  onClick={() => setActiveAdminTab("OVERDUE")}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                    activeAdminTab === 'OVERDUE'
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'bg-white text-rose-700 hover:bg-rose-50 border border-rose-200'
+                  }`}
+                >
+                  <span>🔴 Overdue Recovery & Reminders</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-rose-700 font-black">
+                    {overdueClients.length}
+                  </span>
+                </button>
               </div>
 
               {/* TAB 1: OVERVIEW */}
