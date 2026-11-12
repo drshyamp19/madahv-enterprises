@@ -11855,6 +11855,18 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                     </div>
                   </div>
 
+                  {billSummary.netBalanceDue > selectedClient.credit_limit && (
+                    <div className="mt-2.5 p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5 font-bold">
+                        <Icon name="alert" className="w-4 h-4 text-rose-400" />
+                        <span>⚠️ Credit Limit (₹10,000) Exceeded!</span>
+                      </div>
+                      <span className="font-mono font-bold text-[11px] bg-rose-500/40 px-2 py-0.5 rounded text-white">
+                        +₹{(billSummary.netBalanceDue - selectedClient.credit_limit).toLocaleString()} Over
+                      </span>
+                    </div>
+                  )}
+
                   <button
                     onClick={handleCreateOrder}
                     className={`w-full mt-3 py-3 rounded-xl text-white font-bold text-sm shadow-lg flex items-center justify-center space-x-2 ${
