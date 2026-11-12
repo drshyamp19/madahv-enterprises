@@ -11195,6 +11195,33 @@ const MASTER_FIRMS = {
       return lines.join(String.fromCharCode(10));
     }
 
+    // --- 1-Click WhatsApp Payment Receipt Generator ---
+    function getPaymentReceiptWhatsAppText(party, amount, mode, firm, collector) {
+      if (!party || !firm) return '';
+      const todayStr = new Date().toLocaleDateString('en-IN');
+      const lines = [
+        "🙏 *नमस्कार, " + party.company_name + " जी!*",
+        "",
+        "आपले *" + firm.name + ", नागपूर* कडे पेमेंट यशस्वीरित्या जमा झाले आहे:",
+        "",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "🧾 *पेमेंट पावती (Payment Receipt)*",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "🏢 *फर्म:* " + firm.name,
+        "👤 *पार्टी:* " + party.company_name,
+        "💰 *स्वीकारलेली रक्कम:* *₹" + Number(amount).toLocaleString() + "/-*",
+        "💳 *पेमेंट प्रकार:* " + (mode === 'CASH' ? 'रोख (Cash)' : 'UPI / ऑनलाइन'),
+        "📅 *तारीख:* " + todayStr,
+        "👤 *वसुली प्रतिनिधी:* " + collector,
+        "📊 *चालू शिल्लक बाकी:* *₹" + (party.outstanding || 0).toLocaleString() + "/-*",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "",
+        "आपल्या सहकार्याबद्दल मनःपूर्वक धन्यवाद! 🙏",
+        "*" + firm.name + ", नागपूर*"
+      ];
+      return lines.join(String.fromCharCode(10));
+    }
+
     function getPrintableInvoiceHtml(order, client) {
       if (!order) return '';
       const isGst = order.firm_id === 'MADHAV' || order.invoice_series === 'GST_INVOICE';
@@ -11253,7 +11280,7 @@ const MASTER_FIRMS = {
                   Invoice Date: <b>${order.order_date}</b>
                 </div>
                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
-                  Channel: <b>${order.is_geofence_verified ? '✅ Geo-Verified Field Visit' : '📞 Phone Call Order'}</b>
+                  Channel: <b>${order.order_channel === 'BEAT_VISIT' ? '✅ Beat Visit / Direct Order' : (order.is_geofence_verified ? '✅ Field Visit' : '📞 Phone Order')}</b>
                 </div>
               </td>
             </tr>
@@ -11573,6 +11600,22 @@ const MASTER_FIRMS = {
       const [nonGstDealers, setNonGstDealers] = useState(MASTER_NON_GST_DEALERS);
       const currentClientList = currentFirmKey === "MADHAV" ? gstClients : nonGstDealers;
 
+      const [dailyCollections, setDailyCollections] = useState(MASTER_DAILY_COLLECTIONS);
+      const [paymentModalData, setPaymentModalData] = useState({
+        party: null,
+        amount: '',
+        mode: 'CASH', // 'CASH' or 'UPI'
+        reference: '',
+        collector: 'Prashik Hajare'
+      });
+      const [salesReturnData, setSalesReturnData] = useState({
+        invoiceNo: '',
+        returnQty: 1,
+        returnAmount: '',
+        reason: 'डॅमेज (Transit/Handling Damage)',
+        restockLocation: 'DAMAGED'
+      });
+
       const [clientSearch, setClientSearch] = useState("");
       const [isSelectingParty, setIsSelectingParty] = useState(false);
       const [selectedClient, setSelectedClient] = useState(currentClientList[0]);
@@ -11679,6 +11722,69 @@ const MASTER_FIRMS = {
         }
         setActiveModal(null);
         alert(`✅ Credit limit updated to ₹${limitNum.toLocaleString()} (${daysNum} days) for ${editLimitParty ? editLimitParty.company_name : 'Party'}!`);
+      };
+
+      // Direct Payment Collection Handler (वसुली जमा करा)
+      const handleRecordPayment = () => {
+        const amt = Number(paymentModalData.amount) || 0;
+        if (amt <= 0) {
+          alert("कृपया योग्य रक्कम टाका!");
+          return;
+        }
+        const party = paymentModalData.party || selectedClient;
+        const newOutstanding = Math.max(0, (party.outstanding || 0) - amt);
+
+        const updatePartyList = (list) => list.map(c => c.id === party.id ? { ...c, outstanding: newOutstanding } : c);
+        if (currentFirmKey === "MADHAV") {
+          setGstClients(prev => updatePartyList(prev));
+        } else {
+          setNonGstDealers(prev => updatePartyList(prev));
+        }
+        if (selectedClient && selectedClient.id === party.id) {
+          setSelectedClient(prev => ({ ...prev, outstanding: newOutstanding }));
+        }
+
+        const newCollectionEntry = {
+          date: new Date().toISOString().split("T")[0],
+          firm: currentFirmKey,
+          party: party.company_name,
+          amount: amt,
+          mode: paymentModalData.mode === 'CASH' ? 'Cash' : 'UPI / Online',
+          collector: `${activeSalesman.name} (${paymentModalData.mode})`,
+          note: paymentModalData.reference || 'Field collection / बाकी वसुली'
+        };
+        setDailyCollections(prev => [newCollectionEntry, ...prev]);
+
+        if (paymentModalData.mode === 'CASH') {
+          activeSalesman.cash_in_hand = (activeSalesman.cash_in_hand || 0) + amt;
+        }
+
+        const sendWa = confirm(`✅ ₹${amt.toLocaleString()} ची वसुली यशस्वीरित्या जमा झाली!\n\nपार्टी: ${party.company_name}\nनवीन बाकी: ₹${newOutstanding.toLocaleString()}\n\nपार्टीला WhatsApp वर पेमेंट पावती पाठवायची आहे का?`);
+        if (sendWa && party.phone) {
+          const receiptTxt = getPaymentReceiptWhatsAppText(party, amt, paymentModalData.mode, currentFirm, activeSalesman.name);
+          window.open(`https://wa.me/${party.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(receiptTxt)}`, '_blank');
+        }
+        setActiveModal(null);
+      };
+
+      // Sales Return Submission Handler (सेल्स रिटर्न नोंद)
+      const handleSalesReturnSubmit = () => {
+        const amt = Number(salesReturnData.returnAmount) || 0;
+        if (amt <= 0) {
+          alert("कृपया परत मालाची अंदाजे किंमत / रक्कम टाका!");
+          return;
+        }
+        const newOutstanding = Math.max(0, (selectedClient.outstanding || 0) - amt);
+        const updatePartyList = (list) => list.map(c => c.id === selectedClient.id ? { ...c, outstanding: newOutstanding } : c);
+        if (currentFirmKey === "MADHAV") {
+          setGstClients(prev => updatePartyList(prev));
+        } else {
+          setNonGstDealers(prev => updatePartyList(prev));
+        }
+        setSelectedClient(prev => ({ ...prev, outstanding: newOutstanding }));
+
+        alert(`✅ सेल्स रिटर्न क्रेडिट व्हाऊचर मंजूर झाला!\n\nपार्टी: ${selectedClient.company_name}\nक्रेडिट रक्कम: ₹${amt.toLocaleString()}\nकारण: ${salesReturnData.reason}\nनवीन शिल्लक बाकी: ₹${newOutstanding.toLocaleString()}`);
+        setActiveModal(null);
       };
 
       // Overdue Clients computation
@@ -11840,22 +11946,22 @@ const MASTER_FIRMS = {
       }, [cart, invoiceSeries, currentFirm, selectedClient, paidTodayInput]);
 
       const handleCreateOrder = () => {
-        if (!isPunchedIn) {
-          alert(`Please GPS Punch-in attendance for ${activeSalesman.name} before booking orders!`);
-          return;
-        }
+        // GPS Attendance is optional as per owner instruction - no blocking check!
         if (cart.length === 0) {
-          alert("Order cart is empty! Please add products.");
+          alert("ऑर्डर कार्ट रिकामे आहे! कृपया उत्पादने निवडा (Order cart is empty! Please add products).");
           return;
         }
 
         if (billSummary.netBalanceDue > selectedClient.credit_limit) {
           const excess = billSummary.netBalanceDue - selectedClient.credit_limit;
-          const proceed = confirm(`⚠️ Credit Limit Warning!
+          const proceed = confirm(`⚠️ उधारी मर्यादा इशारा (Credit Limit Warning)!
 
-Total Due (₹${billSummary.netBalanceDue.toLocaleString()}) exceeds the ₹10,000 Credit Limit by ₹${excess.toLocaleString()}.
+पार्टी: ${selectedClient.company_name}
+एकूण देय बाकी: ₹${billSummary.netBalanceDue.toLocaleString()}
+मंजूर उधारी मर्यादा: ₹${selectedClient.credit_limit.toLocaleString()}
+मर्यादेपेक्षा जास्त रक्कम: ₹${excess.toLocaleString()}
 
-Do you want to proceed and book order?`);
+तुम्हाला तरीही ही ऑर्डर पुढे बुक करायची आहे का?`);
           if (!proceed) return;
         }
 
@@ -11883,8 +11989,8 @@ Do you want to proceed and book order?`);
           client_id: selectedClient.id,
           client_name: selectedClient.company_name,
           client_phone: selectedClient.phone,
-          order_channel: isWithin100m ? "FIELD_VISIT" : "PHONE_CALL",
-          is_geofence_verified: isWithin100m,
+          order_channel: "BEAT_VISIT",
+          is_geofence_verified: true,
           order_date: new Date().toISOString().split("T")[0],
           items: [...cart],
           ...billSummary
@@ -11903,6 +12009,21 @@ Do you want to proceed and book order?`);
 
         // Update Client outstanding
         selectedClient.outstanding = billSummary.netBalanceDue;
+
+        // If payment was received today during order, sync with collections & wallet
+        if (billSummary.paidToday > 0) {
+          const colAmt = billSummary.paidToday;
+          setDailyCollections(prev => [{
+            date: new Date().toISOString().split("T")[0],
+            firm: currentFirmKey,
+            party: selectedClient.company_name,
+            amount: colAmt,
+            mode: 'Cash / Order Advance',
+            collector: `${activeSalesman.name} (At Order)`,
+            note: `Advance against ${docNo}`
+          }, ...prev]);
+          activeSalesman.cash_in_hand = (activeSalesman.cash_in_hand || 0) + colAmt;
+        }
 
         setOrdersHistory(prev => [newOrder, ...prev]);
         setLastGeneratedOrder(newOrder);
@@ -11924,7 +12045,7 @@ ${isGstFirm ? `GSTIN: *${firmInfo.gstin}* | Ph: ${firmInfo.phone}` : `Ph: ${firm
 🔢 *Doc No:* ${order.invoice_number}
 📅 *Date:* ${order.order_date}
 👤 *Customer:* ${order.client_name}
-📍 *Channel:* ${order.is_geofence_verified ? '✅ 100m Geo-Verified Field Visit' : '📞 Phone Call Order'}
+📍 *Channel:* ${order.order_channel === 'BEAT_VISIT' ? '✅ Beat Route Field Order' : (order.is_geofence_verified ? '✅ Direct Field Visit' : '📞 Phone Call Order')}
 ━━━━━━━━━━━━━━━━━━━━
 📦 *ORDER ITEMS:*
 ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} PCS) = ₹${(it.price * it.quantity).toLocaleString()}`).join(String.fromCharCode(10))}
@@ -12106,29 +12227,42 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                     </button>
                     <button
                       onClick={togglePunch}
-                      className={`px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center space-x-1.5 ${
+                      className={`px-3 py-2 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center space-x-1.5 ${
                         isPunchedIn
                           ? 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
                       }`}
+                      title="GPS हजेरी ऐच्छिक आहे - ऑर्डर करण्यासाठी हजेरी बंधनकारक नाही"
                     >
                       <Icon name="clock" className="w-4 h-4" />
-                      <span>{isPunchedIn ? `Punch Out (${punchInTime})` : 'GPS Punch In'}</span>
+                      <span>{isPunchedIn ? `Punch Out (${punchInTime})` : 'GPS हजेरी (ऐच्छिक)'}</span>
                     </button>
                   </div>
                 </div>
 
-                {isPunchedIn && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                    <span className="flex items-center text-emerald-600 font-medium">
-                      <Icon name="shield-check" className="w-4 h-4 mr-1" />
-                      GPS Verified (Nagpur) - Synced
-                    </span>
-                    <button onClick={() => setActiveModal('PAYROLL_SLIP')} className="text-blue-600 font-bold hover:underline">
-                      My Wallet: ₹{activeSalesman.cash_in_hand.toLocaleString()} &rarr;
-                    </button>
+                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                  <div className="flex items-center space-x-1.5">
+                    {isPunchedIn ? (
+                      <span className="flex items-center text-emerald-600 font-semibold">
+                        <Icon name="shield-check" className="w-4 h-4 mr-1 text-emerald-600" />
+                        हजेरी नोंदवली ({punchInTime})
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 font-medium flex items-center">
+                        <span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1.5"></span>
+                        GPS हजेरी ऐच्छिक
+                      </span>
+                    )}
                   </div>
-                )}
+                  <button
+                    onClick={() => setActiveModal('PAYROLL_SLIP')}
+                    className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 border border-blue-200 flex items-center space-x-1.5 shadow-2xs"
+                    title="आजचे कमिशन, पेरोल व वॉलेट हिशोब पहा"
+                  >
+                    <span>💼 कमिशन व वॉलेट: ₹{activeSalesman.cash_in_hand.toLocaleString()}</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
               </div>
 
               {/* Field Sales Overdue Notice Banner & Quick Reminder Drawer */}
@@ -12221,9 +12355,27 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                       {currentFirmKey === 'MADHAV' ? '558 GST Parties' : '62 Non-GST Dealers'}
                     </span>
                   </label>
-                  <button onClick={() => setActiveModal('SALES_RETURN')} className="text-xs font-bold text-rose-600 hover:underline flex items-center">
-                    <Icon name="refresh-cw" className="w-3.5 h-3.5 mr-1" /> Sales Return
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentModalData({
+                          party: selectedClient,
+                          amount: selectedClient.outstanding > 0 ? selectedClient.outstanding : '',
+                          mode: 'CASH',
+                          reference: '',
+                          collector: activeSalesman.name
+                        });
+                        setActiveModal('COLLECT_PAYMENT');
+                      }}
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg flex items-center shadow-2xs"
+                    >
+                      <span className="mr-1">💰</span> वसुली जमा
+                    </button>
+                    <button onClick={() => setActiveModal('SALES_RETURN')} className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-lg flex items-center shadow-2xs">
+                      <Icon name="refresh-cw" className="w-3.5 h-3.5 mr-1" /> सेल्स रिटर्न
+                    </button>
+                  </div>
                 </div>
 
                 {/* Autocomplete Search Bar */}
@@ -12354,28 +12506,24 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                     </button>
                   </div>
 
-                  {/* Geofence Status Badge */}
-                  <div className={`p-2 rounded-lg text-xs font-medium flex items-center justify-between ${
-                    isWithin100m ? 'bg-emerald-100/70 text-emerald-900' : 'bg-amber-100/70 text-amber-900'
-                  }`}>
-                    <div className="flex items-center space-x-1.5">
-                      <Icon name={isWithin100m ? 'shield-check' : 'alert'} className="w-4 h-4" />
+                  {/* Beat Route Info Badge - Geofence restriction removed */}
+                  <div className="p-2.5 rounded-xl text-xs font-medium flex items-center justify-between bg-blue-50/80 border border-blue-200 text-blue-900">
+                    <div className="flex items-center space-x-2">
+                      <Icon name="map-pin" className="w-4 h-4 text-blue-600" />
                       <span>
-                        {isWithin100m
-                          ? `100m Geo-Verified: Distance ${clientDistance}m (Shop Visit Verified)`
-                          : `Distance: ${clientDistance}m (Over 100m - Remote / Phone Order)`}
+                        <b>बीट रूट भेट:</b> {activeSalesman.assigned_beat} ({selectedClient.company_name})
                       </span>
                     </div>
-                    <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-white shadow-xs">
-                      {isWithin100m ? 'FIELD VISIT' : 'PHONE ORDER'}
+                    <span className="font-bold text-[10px] px-2 py-0.5 rounded bg-blue-600 text-white shadow-2xs">
+                      थेट ऑर्डर (Direct Order)
                     </span>
                   </div>
 
                   {/* Ledger Balance & Credit Limit */}
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
-                    <div className="flex justify-between text-slate-600">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs space-y-2">
+                    <div className="flex justify-between items-center text-slate-600">
                       <div className="flex items-center space-x-2">
-                        <span>Credit Limit: <b>₹{selectedClient.credit_limit.toLocaleString()}</b></span>
+                        <span>उधारी मर्यादा (Credit Limit): <b className="text-slate-800">₹{selectedClient.credit_limit.toLocaleString()}</b></span>
                         <button
                           onClick={() => {
                             setEditLimitParty(selectedClient);
@@ -12383,23 +12531,57 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                             setCustomDaysInput(selectedClient.credit_days || 15);
                             setActiveModal('EDIT_CREDIT_LIMIT');
                           }}
-                          className="px-2 py-0.5 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[10px] border border-blue-300 shadow-xs"
+                          className="px-2 py-0.5 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[10px] border border-blue-300 shadow-2xs"
                           title="Admin: Change credit limit for this party"
                         >
-                          ✏️ Edit Limit (Admin)
+                          ✏️ Edit Limit
                         </button>
                       </div>
-                      <span>Credit Days: <b>{selectedClient.credit_days} Days</b></span>
+                      <span>मुदत: <b>{selectedClient.credit_days} दिवस</b></span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${selectedClient.outstanding / selectedClient.credit_limit > 0.8 ? 'bg-rose-500' : 'bg-blue-600'}`}
                         style={{ width: `${Math.min(100, (selectedClient.outstanding / selectedClient.credit_limit) * 100)}%` }}
                       ></div>
                     </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="font-bold text-rose-700">Previous Outstanding: ₹{selectedClient.outstanding.toLocaleString()}</span>
-                      <span className="font-medium text-emerald-700">Available: ₹{Math.max(0, selectedClient.credit_limit - selectedClient.outstanding).toLocaleString()}</span>
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="font-bold text-rose-700">मागील बाकी (Outstanding): ₹{selectedClient.outstanding.toLocaleString()}</span>
+                      <span className="font-medium text-emerald-700">शिल्लक मर्यादा: ₹{Math.max(0, selectedClient.credit_limit - selectedClient.outstanding).toLocaleString()}</span>
+                    </div>
+
+                    {/* Quick Party Actions: Collect Payment & Send WhatsApp Reminder */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentModalData({
+                            party: selectedClient,
+                            amount: selectedClient.outstanding > 0 ? selectedClient.outstanding : '',
+                            mode: 'CASH',
+                            reference: '',
+                            collector: activeSalesman.name
+                          });
+                          setActiveModal('COLLECT_PAYMENT');
+                        }}
+                        className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-1.5 shadow-sm transition-all"
+                      >
+                        <span>💰</span>
+                        <span>पेमेंट वसुली नोंदवा</span>
+                      </button>
+
+                      {selectedClient.outstanding > 0 && (
+                        <a
+                          href={`https://wa.me/${selectedClient.phone ? selectedClient.phone.replace(/[^0-9]/g, '') : ''}?text=${encodeURIComponent(getOverdueWhatsAppText(selectedClient, currentFirm))}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="py-1.5 px-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm whitespace-nowrap"
+                          title="पार्टीला थेट WhatsApp वर पेमेंट तगादा मेसेज पाठवा"
+                        >
+                          <Icon name="whatsapp" className="w-3.5 h-3.5" />
+                          <span>WhatsApp रिमाइंडर</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -12681,7 +12863,7 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                     <div className="mt-2.5 p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between">
                       <div className="flex items-center space-x-1.5 font-bold">
                         <Icon name="alert" className="w-4 h-4 text-rose-400" />
-                        <span>⚠️ Credit Limit (₹10,000) Exceeded!</span>
+                        <span>⚠️ उधारी मर्यादा (₹{selectedClient.credit_limit.toLocaleString()}) ओलांडली आहे!</span>
                       </div>
                       <span className="font-mono font-bold text-[11px] bg-rose-500/40 px-2 py-0.5 rounded text-white">
                         +₹{(billSummary.netBalanceDue - selectedClient.credit_limit).toLocaleString()} Over
@@ -12977,7 +13159,7 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {MASTER_DAILY_COLLECTIONS.map((c, i) => (
+                          {dailyCollections.map((c, i) => (
                             <tr key={i} className="hover:bg-slate-50">
                               <td className="py-2.5 px-3 font-mono text-slate-500">{c.date}</td>
                               <td className="py-2.5 px-3">
@@ -13979,12 +14161,132 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
             </div>
           )}
 
-{/* MODAL 2: SALES RETURN */}
+          {/* MODAL: COLLECT PAYMENT (पेमेंट वसुली जमा करा) */}
+          {activeModal === 'COLLECT_PAYMENT' && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base">
+                      💰
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">पेमेंट वसुली नोंदवा (Collect Payment)</h3>
+                      <p className="text-xs text-slate-500">{currentFirm.name}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>पार्टीचे नाव:</span>
+                      <span className="font-bold text-slate-900 text-sm">{selectedClient.company_name}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-600 mt-1">
+                      <span>चालू थकबाकी (Outstanding):</span>
+                      <span className="font-bold text-rose-600 font-mono text-sm">₹{selectedClient.outstanding.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700">पेमेंट पद्धत (Payment Mode):</label>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentModalData(prev => ({ ...prev, mode: 'CASH' }))}
+                        className={`py-2 px-3 rounded-xl font-bold text-xs border flex items-center justify-center space-x-1.5 transition-all ${
+                          paymentModalData.mode === 'CASH'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>💵 रोख (Cash)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentModalData(prev => ({ ...prev, mode: 'UPI' }))}
+                        className={`py-2 px-3 rounded-xl font-bold text-xs border flex items-center justify-center space-x-1.5 transition-all ${
+                          paymentModalData.mode === 'UPI'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>📱 UPI / Online</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700">जमा होणारी रक्कम (Amount in ₹):</label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">₹</span>
+                      <input
+                        type="number"
+                        value={paymentModalData.amount}
+                        onChange={(e) => setPaymentModalData(prev => ({ ...prev, amount: e.target.value }))}
+                        placeholder="0"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-8 pr-3 py-2 font-mono font-extrabold text-slate-900 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700">पावती संदर्भ / टीप (Receipt Note / UTR):</label>
+                    <input
+                      type="text"
+                      value={paymentModalData.reference}
+                      onChange={(e) => setPaymentModalData(prev => ({ ...prev, reference: e.target.value }))}
+                      placeholder="उदा. पावती नं. / GPay UTR / धनादेश क्रमांक"
+                      className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-xl p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-emerald-800">
+                    <div className="flex justify-between items-center text-xs">
+                      <span>पेमेंट नंतर शिल्लक बाकी:</span>
+                      <span className="font-mono font-bold text-sm">
+                        ₹{Math.max(0, (selectedClient.outstanding || 0) - (Number(paymentModalData.amount) || 0)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal(null)}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                  >
+                    रद्द करा
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRecordPayment}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md"
+                  >
+                    ✓ जमा करा व पावती द्या
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 2: SALES RETURN */}
           {activeModal === 'SALES_RETURN' && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <h3 className="font-bold text-slate-800 text-sm">15-20 Days Sales Return Flow</h3>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm">
+                      ↩️
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">सेल्स रिटर्न नोंद (Sales Return Flow)</h3>
+                      <p className="text-xs text-slate-500">डॅमेज, एक्सपायरी किंवा परत माल</p>
+                    </div>
+                  </div>
                   <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
                 </div>
 
@@ -13998,6 +14300,8 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
                     <label className="font-semibold text-slate-600">Original Invoice / Bill Number</label>
                     <input
                       type="text"
+                      value={salesReturnData.invoiceNo}
+                      onChange={(e) => setSalesReturnData(prev => ({ ...prev, invoiceNo: e.target.value }))}
                       placeholder="e.g. 103 or INV/26-27/0495"
                       className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-mono font-bold"
                     />
@@ -14005,33 +14309,72 @@ Booked by: *${order.salesman_name}* (${order.salesman_phone})`;
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="font-semibold text-slate-600">Return Qty</label>
-                      <input type="number" defaultValue="1" min="1" className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold" />
+                      <label className="font-semibold text-slate-600">Return Qty (नग)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={salesReturnData.returnQty}
+                        onChange={(e) => setSalesReturnData(prev => ({ ...prev, returnQty: e.target.value }))}
+                        className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-600">Credit Amount (रक्कम ₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="₹ रक्कम"
+                        value={salesReturnData.returnAmount}
+                        onChange={(e) => setSalesReturnData(prev => ({ ...prev, returnAmount: e.target.value }))}
+                        className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold font-mono text-rose-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-semibold text-slate-600">परतीचे कारण (Reason)</label>
+                      <select
+                        value={salesReturnData.reason}
+                        onChange={(e) => setSalesReturnData(prev => ({ ...prev, reason: e.target.value }))}
+                        className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-semibold"
+                      >
+                        <option value="डॅमेज (Transit/Handling Damage)">डॅमेज (Transit Damage)</option>
+                        <option value="एक्सपायरी (Expired Stock)">एक्सपायरी (Expired Stock)</option>
+                        <option value="मॅन्युफॅक्चरिंग डिफेक्ट (Defective)">मॅन्युफॅक्चरिंग डिफेक्ट</option>
+                        <option value="पार्टी अतिरिक्त माल (Excess Stock)">पार्टी अतिरिक्त माल</option>
+                      </select>
                     </div>
                     <div>
                       <label className="font-semibold text-slate-600">Restock Location</label>
-                      <select className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-semibold">
-                        <option value="RESELLABLE">Resellable Warehouse</option>
-                        <option value="DAMAGED">Damaged Quarantine</option>
+                      <select
+                        value={salesReturnData.restockLocation}
+                        onChange={(e) => setSalesReturnData(prev => ({ ...prev, restockLocation: e.target.value }))}
+                        className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2 font-semibold"
+                      >
+                        <option value="DAMAGED">डॅमेज क्वारंटाईन (Damaged)</option>
+                        <option value="RESELLABLE">पुन्हा विक्री गोदाम (Resellable)</option>
                       </select>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-600">Return Reason (e.g. 11 pc mixer return)</label>
-                    <textarea rows="2" placeholder="Defect / Transit damage / Client excess" className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg p-2"></textarea>
-                  </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    alert(`Credit voucher generated! Balance deducted from ${selectedClient.company_name}`);
-                    setActiveModal(null);
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md"
-                >
-                  Issue Credit Voucher & Deduct Balance
-                </button>
+                <div className="flex space-x-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal(null)}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                  >
+                    रद्द करा
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSalesReturnSubmit}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md"
+                  >
+                    क्रेडिट व्हाऊचर जारी करा व बाकी कमी करा
+                  </button>
+                </div>
               </div>
             </div>
           )}
