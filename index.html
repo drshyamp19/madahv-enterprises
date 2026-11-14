@@ -132,6 +132,9 @@
         id: "shyam",
         name: "Shyam Pimplkar",
         nameMr: "श्याम पिंपळकर",
+        username: "shyam",
+        password: "123456",
+        email: "shyam.madhav@gmail.com",
         designation: "Proprietor & Master Controller (मुख्य मालक / सुपर ॲडमिन)",
         role: "ADMIN",
         fullAccess: true,
@@ -147,6 +150,9 @@
         id: "roshan",
         name: "Roshan Thakre",
         nameMr: "रोशन ठाकरे",
+        username: "roshan",
+        password: "123456",
+        email: "roshan.madhav@gmail.com",
         designation: "Proprietor / Partner (मालक / भागीदार)",
         role: "ADMIN",
         fullAccess: true,
@@ -162,6 +168,9 @@
         id: "prashik",
         name: "Prashik Hajare",
         nameMr: "प्रशिक हजारे",
+        username: "prashik",
+        password: "123456",
+        email: "prashik.madhav@gmail.com",
         designation: "Shop & Operations Manager (शॉप व गोदाम मॅनेजर - बिलिंग, डिस्पॅच व कॅश)",
         role: "SALES_REP",
         isManager: true,
@@ -179,6 +188,9 @@
         id: "gopal",
         name: "Gopal Ambagade",
         nameMr: "गोपाल आंबागडे",
+        username: "gopal",
+        password: "123456",
+        email: "gopal.madhav@gmail.com",
         designation: "Green Chef & Shivom Sales (ग्रीन शेफ व शिवओम सेल्स)",
         role: "SALES_REP",
         fullAccess: false,
@@ -195,6 +207,9 @@
         id: "vikram",
         name: "Viki (Vikram Sing)",
         nameMr: "विकी (विक्रम सिंग)",
+        username: "vikram",
+        password: "123456",
+        email: "viki.shivom@gmail.com",
         designation: "Shivom Non-GST & Madhav GST Sales (शिवओम व माधव सेल्स - सोबत गोपाल/प्रशिक)",
         role: "SALES_REP",
         fullAccess: false,
@@ -11750,10 +11765,85 @@ const MASTER_FIRMS = {
     ];
 
     function App() {
-      // User Profile & Roles
-      const [currentUserId, setCurrentUserId] = useState("shyam"); // Default to Shyam Pimplkar (Master Controller / मुख्य मालक)
+      // User Authentication State
+      const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        try {
+          return !!localStorage.getItem('madhav_auth_user');
+        } catch (e) {
+          return false;
+        }
+      });
+      const [currentUserId, setCurrentUserId] = useState(() => {
+        try {
+          return localStorage.getItem('madhav_auth_user') || "shyam";
+        } catch (e) {
+          return "shyam";
+        }
+      });
       const currentUser = MASTER_TEAM[currentUserId] || MASTER_TEAM.shyam;
       const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+
+      // Login Form State
+      const [loginUserKey, setLoginUserKey] = useState("shyam");
+      const [loginPassword, setLoginPassword] = useState("");
+      const [loginError, setLoginError] = useState("");
+      const [showPassword, setShowPassword] = useState(false);
+
+      const handleLogin = (e) => {
+        if (e) e.preventDefault();
+        setLoginError("");
+
+        const searchKey = (loginUserKey || "").trim().toLowerCase();
+        let matchedUser = MASTER_TEAM[searchKey];
+        if (!matchedUser) {
+          matchedUser = Object.values(MASTER_TEAM).find(u => 
+            u.id.toLowerCase() === searchKey ||
+            (u.username && u.username.toLowerCase() === searchKey) ||
+            (u.phone && u.phone.replace(/[^0-9]/g, '').includes(searchKey.replace(/[^0-9]/g, ''))) ||
+            (searchKey === 'viki' && u.id === 'vikram') ||
+            (u.email && u.email.toLowerCase() === searchKey)
+          );
+        }
+
+        if (!matchedUser) {
+          setLoginError("कृपया यादीतून तुमचे नाव निवडा!");
+          return;
+        }
+
+        if (loginPassword !== (matchedUser.password || "123456")) {
+          setLoginError("❌ चुकीचा पासवर्ड! सध्या सर्वांसाठी तात्पुरता पासवर्ड '123456' आहे.");
+          return;
+        }
+
+        // Login success!
+        setCurrentUserId(matchedUser.id);
+        setIsAuthenticated(true);
+        try {
+          localStorage.setItem('madhav_auth_user', matchedUser.id);
+        } catch (err) {}
+
+        if (matchedUser.role === 'ADMIN') {
+          setRole('ADMIN');
+        } else {
+          setRole('SALES_REP');
+          if (matchedUser.firmAccess === 'MADHAV') {
+            setCurrentFirmKey('MADHAV');
+          } else if (matchedUser.firmAccess === 'SHIVOM') {
+            setCurrentFirmKey('SHIVOM');
+          }
+        }
+        setLoginPassword("");
+        setLoginError("");
+      };
+
+      const handleLogout = () => {
+        setIsAuthenticated(false);
+        try {
+          localStorage.removeItem('madhav_auth_user');
+        } catch (err) {}
+        setLoginPassword("");
+        setLoginError("");
+      };
 
       const [currentFirmKey, setCurrentFirmKey] = useState("MADHAV"); // 'MADHAV' or 'SHIVOM'
       const [role, setRole] = useState("ADMIN"); // 'SALES_REP' or 'ADMIN'
@@ -11790,6 +11880,9 @@ const MASTER_FIRMS = {
         const u = MASTER_TEAM[newId];
         setCurrentUserId(newId);
         setIsProfileDropdownOpen(false);
+        try {
+          localStorage.setItem('madhav_auth_user', newId);
+        } catch (e) {}
         if (u.role === 'ADMIN') {
           setRole('ADMIN');
         } else {
@@ -12379,6 +12472,169 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
         };
       }, [ordersHistory, products]);
 
+      if (!isAuthenticated) {
+        const selectedLoginUser = MASTER_TEAM[loginUserKey] || MASTER_TEAM.shyam;
+
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white flex flex-col justify-center items-center px-4 py-8 font-sans selection:bg-indigo-500 selection:text-white">
+            <div className="w-full max-w-lg">
+              {/* Brand Header */}
+              <div className="text-center mb-6">
+                <div className="inline-block p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl mb-3">
+                  <img src="madhav-logo.png" alt="Madhav Logo" className="h-16 max-w-full mx-auto object-contain" />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-sky-300 to-emerald-400">
+                  माधव एंटरप्रायझेस व शिवओम सेल्स
+                </h1>
+                <p className="text-xs text-slate-400 mt-1 font-medium">
+                  Green Chef Authorized Distributor & Wholesale ERP System
+                </p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-2.5 rounded-full bg-indigo-900/60 border border-indigo-700/60 text-[11px] text-indigo-300 font-semibold shadow-inner">
+                  <span>🔐</span>
+                  <span>टीम सदस्य स्वतंत्र सुरक्षित लॉगिन</span>
+                </div>
+              </div>
+
+              {/* Login Card */}
+              <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                {/* Subtle top ambient glow */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-amber-400 to-emerald-500" />
+
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-slate-300 mb-2 uppercase tracking-wider flex items-center justify-between">
+                    <span>१. लॉगिन करण्यासाठी तुमचे नाव निवडा:</span>
+                    <span className="text-[10px] text-amber-400 normal-case font-normal">(खालील कार्डवर क्लिक करा)</span>
+                  </label>
+
+                  {/* Team Members List */}
+                  <div className="grid grid-cols-1 gap-2 mb-4">
+                    {Object.values(MASTER_TEAM).map((u) => {
+                      const isSelected = loginUserKey === u.id;
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => {
+                            setLoginUserKey(u.id);
+                            setLoginError("");
+                          }}
+                          className={`cursor-pointer p-2.5 rounded-2xl border transition-all flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-indigo-600/30 border-indigo-400 shadow-md ring-2 ring-indigo-500/50'
+                              : 'bg-slate-800/60 border-slate-700 hover:bg-slate-800 hover:border-slate-600 text-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-lg shadow-inner shrink-0">
+                              {u.avatar}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
+                                <span>{u.nameMr}</span>
+                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                                  u.role === 'ADMIN' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                }`}>
+                                  {u.role === 'ADMIN' ? 'मालक' : (u.isManager ? 'मॅनेजर' : 'सेल्स')}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-mono truncate">
+                                {u.phone} &nbsp;|&nbsp; ID: <span className="text-slate-300 font-bold">{u.id}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center shrink-0 ml-2">
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                              isSelected ? 'bg-indigo-500 text-white shadow' : 'border border-slate-600 text-transparent'
+                            }`}>
+                              ✓
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Password Form */}
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>२. पासवर्ड प्रविष्ट करा (PIN):</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoginPassword("123456");
+                          setLoginError("");
+                        }}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/30 transition-colors"
+                      >
+                        ⚡ 123456 ऑटो-भरा
+                      </button>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={loginPassword}
+                        onChange={(e) => {
+                          setLoginPassword(e.target.value);
+                          setLoginError("");
+                        }}
+                        placeholder="पासवर्ड टाका (उदा: 123456)"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tracking-wider font-mono pr-11"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 text-sm transition-colors"
+                        title={showPassword ? "पासवर्ड लपवा" : "पासवर्ड दाखवा"}
+                      >
+                        {showPassword ? "🙈" : "👁️"}
+                      </button>
+                    </div>
+
+                    <div className="mt-2 text-[10px] text-slate-400 flex items-center justify-between">
+                      <span>लॉगिन खाते: <b className="text-slate-200">{selectedLoginUser.nameMr}</b> ({selectedLoginUser.role === 'ADMIN' ? 'मालक' : 'सेल्स'})</span>
+                      <span className="font-mono text-emerald-400">सध्याचा PIN: 123456</span>
+                    </div>
+                  </div>
+
+                  {loginError && (
+                    <div className="p-3 rounded-xl bg-red-950/60 border border-red-800 text-red-200 text-xs flex items-start gap-2">
+                      <span className="text-sm">⚠️</span>
+                      <span className="font-medium leading-tight">{loginError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 hover:from-blue-500 hover:via-indigo-500 hover:to-emerald-500 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-indigo-600/30 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    <span>🔐</span>
+                    <span>पोर्टलमध्ये सुरक्षित लॉगिन करा</span>
+                    <span>➔</span>
+                  </button>
+                </form>
+
+                {/* Information Notice about current setup vs future Firebase */}
+                <div className="mt-5 pt-4 border-t border-slate-800 text-center">
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    💡 <b className="text-slate-300">सोयीसाठी सूचना:</b> काम सुलभ होण्यासाठी सध्या सर्वांचा पासवर्ड <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">123456</span> ठेवला आहे. प्रोजेक्ट फायनल झाल्यावर फायरबेस (Firebase) ईमेल लॉगिन सुरू करू.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer info */}
+              <div className="text-center mt-6 text-xs text-slate-500">
+                माधव एंटरप्रायझेस व शिवओम सेल्स © २०२६ &nbsp;|&nbsp; नागपूर, महाराष्ट्र
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="max-w-7xl mx-auto pb-12 font-sans text-slate-800">
           {/* Header with 2-Firm Switcher & Profile Dropdown */}
@@ -12407,6 +12663,16 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
 
             {/* Top Bar Controls */}
             <div className="flex flex-wrap items-center gap-2 relative">
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-200 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                title="लॉग आऊट करा (Logout)"
+              >
+                <span>🚪</span>
+                <span className="hidden sm:inline">लॉग आऊट</span>
+              </button>
+
               {/* Profile Selector Dropdown */}
               <div className="relative">
                 <button
@@ -12456,6 +12722,15 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                         )}
                       </button>
                     ))}
+                    <div className="pt-1.5 mt-1 border-t border-slate-800">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-center p-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 font-bold transition-all"
+                      >
+                        <span>🚪</span>
+                        <span>खाते बदला / लॉग आऊट</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
