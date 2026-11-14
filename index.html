@@ -135,12 +135,14 @@
         username: "shyam",
         password: "123456",
         email: "shyam.madhav@gmail.com",
-        designation: "Proprietor & Master Controller (मुख्य मालक / सुपर ॲडमिन)",
+        designationEn: "Proprietor & Master Controller (Super Admin)",
+        designationMr: "मुख्य मालक / सुपर ॲडमिन (सर्व अधिकार)",
         role: "ADMIN",
         fullAccess: true,
         phone: "+91 93095 43825",
         avatar: "👑",
-        badge: "मालक (Full Access)",
+        badgeEn: "Owner (Full Access)",
+        badgeMr: "मालक (सर्व अधिकार)",
         firmAccess: "BOTH",
         canEditCreditLimit: true,
         canStockInward: true,
@@ -153,12 +155,14 @@
         username: "roshan",
         password: "123456",
         email: "roshan.madhav@gmail.com",
-        designation: "Proprietor / Partner (मालक / भागीदार)",
+        designationEn: "Proprietor & Partner (Full Access)",
+        designationMr: "मालक / भागीदार (सर्व अधिकार)",
         role: "ADMIN",
         fullAccess: true,
         phone: "+91 93723 76310",
         avatar: "👔",
-        badge: "मालक (Full Access)",
+        badgeEn: "Owner (Full Access)",
+        badgeMr: "मालक (सर्व अधिकार)",
         firmAccess: "BOTH",
         canEditCreditLimit: true,
         canStockInward: true,
@@ -171,15 +175,18 @@
         username: "prashik",
         password: "123456",
         email: "prashik.madhav@gmail.com",
-        designation: "Shop & Operations Manager (शॉप व गोदाम मॅनेजर - बिलिंग, डिस्पॅच व कॅश)",
+        designationEn: "Shop & Operations Manager (Billing, Dispatch & Cash)",
+        designationMr: "शॉप व गोदाम मॅनेजर (बिलिंग, डिस्पॅच व कॅश इनचार्ज)",
         role: "SALES_REP",
         isManager: true,
         fullAccess: false,
         phone: "+91 74994 77581",
         avatar: "🏢",
-        badge: "शॉप मॅनेजर (दोन्ही फर्म्स)",
+        badgeEn: "Shop Manager (Both Firms)",
+        badgeMr: "शॉप मॅनेजर (दोन्ही फर्म्स)",
         firmAccess: "BOTH",
-        assigned_beat: "शॉप बिलिंग, डिस्पॅच व कॅश कलेक्शन इनचार्ज",
+        assigned_beatEn: "Shop Billing, Dispatch & Collection Incharge",
+        assigned_beatMr: "शॉप बिलिंग, डिस्पॅच व कॅश कलेक्शन इनचार्ज",
         canEditCreditLimit: false,
         canStockInward: true,
         canDispatch: true
@@ -191,14 +198,17 @@
         username: "gopal",
         password: "123456",
         email: "gopal.madhav@gmail.com",
-        designation: "Green Chef & Shivom Sales (ग्रीन शेफ व शिवओम सेल्स)",
+        designationEn: "Green Chef & Shivom Sales Rep",
+        designationMr: "ग्रीन शेफ व शिवओम सेल्स प्रतिनिधी",
         role: "SALES_REP",
         fullAccess: false,
         phone: "+91 90754 79839",
         avatar: "🔵",
-        badge: "ग्रीन शेफ + शिवओम सेल्स",
+        badgeEn: "Green Chef + Shivom Sales",
+        badgeMr: "ग्रीन शेफ + शिवओम सेल्स",
         firmAccess: "BOTH",
-        assigned_beat: "Indora - Itwari - Sadar Wholesale Beat",
+        assigned_beatEn: "Indora - Itwari - Sadar Wholesale Beat",
+        assigned_beatMr: "इंदोरा - इतवारी - सदर होलसेल बीट",
         canEditCreditLimit: false,
         canStockInward: false,
         canDispatch: false
@@ -210,15 +220,19 @@
         username: "vikram",
         password: "123456",
         email: "viki.shivom@gmail.com",
-        designation: "Shivom Non-GST & Madhav GST Sales (शिवओम व माधव सेल्स - सोबत गोपाल/प्रशिक)",
+        designationEn: "Shivom Non-GST & Madhav GST Sales Rep",
+        designationMr: "शिवओम व माधव सेल्स (सोबत गोपाल/प्रशिक)",
         role: "SALES_REP",
         fullAccess: false,
         phone: "+91 70282 87698",
         avatar: "🟢",
-        badge: "शिवओम + माधव सेल्स",
+        badgeEn: "Shivom + Madhav Sales",
+        badgeMr: "शिवओम + माधव सेल्स",
         firmAccess: "BOTH",
-        partnerNote: "विकीसोबत नेहमी गोपाल किंवा प्रशिक् असतात (दोन्ही फर्म्सचा माल विकू शकतात)",
-        assigned_beat: "Retail, Spares & Wholesale Beat",
+        partnerNoteEn: "Viki always travels with Gopal or Prashik (can sell both firms)",
+        partnerNoteMr: "विकीसोबत नेहमी गोपाल किंवा प्रशिक् असतात (दोन्ही फर्म्सचा माल विकू शकतात)",
+        assigned_beatEn: "Retail, Spares & Wholesale Beat",
+        assigned_beatMr: "रिटेल, स्पेअर्स व होलसेल बीट",
         canEditCreditLimit: false,
         canStockInward: false,
         canDispatch: false
@@ -11765,6 +11779,25 @@ const MASTER_FIRMS = {
     ];
 
     function App() {
+      // Language State: 'en' (English - Default) or 'mr' (Marathi)
+      const [lang, setLang] = useState(() => {
+        try {
+          return localStorage.getItem('madhav_app_lang') || 'en';
+        } catch (e) {
+          return 'en';
+        }
+      });
+
+      const switchLang = (newLang) => {
+        setLang(newLang);
+        try {
+          localStorage.setItem('madhav_app_lang', newLang);
+        } catch (e) {}
+      };
+
+      // Bilingual Translation Helper: defaults to English or switches to Marathi
+      const t = (en, mr) => (lang === 'mr' ? mr : en);
+
       // User Authentication State
       const [isAuthenticated, setIsAuthenticated] = useState(() => {
         try {
@@ -11859,19 +11892,19 @@ const MASTER_FIRMS = {
       const activeSalesman = (currentUser.role === 'SALES_REP')
         ? {
             id: currentUser.id,
-            name: currentUser.name,
+            name: t(currentUser.name, currentUser.nameMr),
             phone: currentUser.phone,
-            role: currentUser.designation,
-            assigned_beat: currentUser.assigned_beat || (currentFirmKey === 'MADHAV' ? 'Indora Wholesale Beat' : 'Retail Beat'),
+            role: t(currentUser.designationEn, currentUser.designationMr),
+            assigned_beat: t(currentUser.assigned_beatEn, currentUser.assigned_beatMr) || (currentFirmKey === 'MADHAV' ? t('Indora Wholesale Beat', 'इंदोरा होलसेल बीट') : t('Retail Beat', 'रिटेल बीट')),
             base_salary: currentUser.id === 'vikram' ? 22000 : 25000,
             cash_in_hand: currentUser.id === 'gopal' ? 9100 : (currentUser.id === 'vikram' ? 12850 : 15400)
           }
         : {
             id: currentUser.id,
-            name: currentUser.name,
+            name: t(currentUser.name, currentUser.nameMr),
             phone: currentUser.phone,
-            role: currentUser.designation,
-            assigned_beat: 'Master Administration & Direct Booking',
+            role: t(currentUser.designationEn, currentUser.designationMr),
+            assigned_beat: t('Master Administration & Direct Booking', 'मुख्य प्रशासन व थेट बिलिंग'),
             base_salary: 35000,
             cash_in_hand: 0
           };
@@ -12209,7 +12242,7 @@ const MASTER_FIRMS = {
         const newQty = currentCartQty + qty;
 
         if (qty > 0 && newQty > availableStock) {
-          alert(`उपलब्ध साठ्यापेक्षा (${availableStock} नग) जास्त बुक करता येत नाही.`);
+          alert(`उपलब्ध साठ्यापेक्षा (${availableStock} नग) {t('Overdue Extra', 'जास्त')} बुक करता येत नाही.`);
           return;
         }
 
@@ -12478,20 +12511,42 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white flex flex-col justify-center items-center px-4 py-8 font-sans selection:bg-indigo-500 selection:text-white">
             <div className="w-full max-w-lg">
+              {/* Top Language Toggle on Login Screen */}
+              <div className="flex justify-end mb-3">
+                <div className="inline-flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700 text-xs font-bold shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => switchLang('en')}
+                    className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${lang === 'en' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    <span>🇬🇧</span>
+                    <span>English</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchLang('mr')}
+                    className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 ${lang === 'mr' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    <span>🇮🇳</span>
+                    <span>मराठी</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Brand Header */}
               <div className="text-center mb-6">
                 <div className="inline-block p-3.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl mb-3">
                   <img src="madhav-logo.png" alt="Madhav Logo" className="h-16 max-w-full mx-auto object-contain" />
                 </div>
                 <h1 className="text-xl sm:text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-sky-300 to-emerald-400">
-                  माधव एंटरप्रायझेस व शिवओम सेल्स
+                  {t('MADHAV ENTERPRISES & SHIVOM SALES', 'माधव एंटरप्रायझेस व शिवओम सेल्स')}
                 </h1>
                 <p className="text-xs text-slate-400 mt-1 font-medium">
                   Green Chef Authorized Distributor & Wholesale ERP System
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-2.5 rounded-full bg-indigo-900/60 border border-indigo-700/60 text-[11px] text-indigo-300 font-semibold shadow-inner">
                   <span>🔐</span>
-                  <span>टीम सदस्य स्वतंत्र सुरक्षित लॉगिन</span>
+                  <span>{t('Secure Team Member Login Portal', 'टीम सदस्य स्वतंत्र सुरक्षित लॉगिन')}</span>
                 </div>
               </div>
 
@@ -12502,8 +12557,8 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
 
                 <div className="mb-4">
                   <label className="block text-xs font-bold text-slate-300 mb-2 uppercase tracking-wider flex items-center justify-between">
-                    <span>१. लॉगिन करण्यासाठी तुमचे नाव निवडा:</span>
-                    <span className="text-[10px] text-amber-400 normal-case font-normal">(खालील कार्डवर क्लिक करा)</span>
+                    <span>{t('1. Select your account to login:', '१. लॉगिन करण्यासाठी तुमचे नाव निवडा:')}</span>
+                    <span className="text-[10px] text-amber-400 normal-case font-normal">{t('(Click your card below)', '(खालील कार्डवर क्लिक करा)')}</span>
                   </label>
 
                   {/* Team Members List */}
@@ -12559,7 +12614,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                   <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800">
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>२. पासवर्ड प्रविष्ट करा (PIN):</span>
+                        <span>{t('2. Enter Password (PIN):', '२. पासवर्ड प्रविष्ट करा (PIN):')}</span>
                       </label>
                       <button
                         type="button"
@@ -12569,7 +12624,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                         }}
                         className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/30 transition-colors"
                       >
-                        ⚡ 123456 ऑटो-भरा
+                        <span>⚡ {t('Auto-fill 123456', '123456 ऑटो-भरा')}</span>
                       </button>
                     </div>
 
@@ -12581,7 +12636,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                           setLoginPassword(e.target.value);
                           setLoginError("");
                         }}
-                        placeholder="पासवर्ड टाका (उदा: 123456)"
+                        placeholder={t('Enter Password (e.g. 123456)', 'पासवर्ड टाका (उदा: 123456)')}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tracking-wider font-mono pr-11"
                         autoFocus
                       />
@@ -12589,15 +12644,15 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 text-sm transition-colors"
-                        title={showPassword ? "पासवर्ड लपवा" : "पासवर्ड दाखवा"}
+                        title={showPassword ? t('Hide Password', 'पासवर्ड लपवा') : t('Show Password', 'पासवर्ड दाखवा')}
                       >
                         {showPassword ? "🙈" : "👁️"}
                       </button>
                     </div>
 
                     <div className="mt-2 text-[10px] text-slate-400 flex items-center justify-between">
-                      <span>लॉगिन खाते: <b className="text-slate-200">{selectedLoginUser.nameMr}</b> ({selectedLoginUser.role === 'ADMIN' ? 'मालक' : 'सेल्स'})</span>
-                      <span className="font-mono text-emerald-400">सध्याचा PIN: 123456</span>
+                      <span>{t('Active Account:', 'लॉगिन खाते:')} <b className="text-slate-200">{t(selectedLoginUser.name, selectedLoginUser.nameMr)}</b> ({selectedLoginUser.role === 'ADMIN' ? t('Owner', 'मालक') : t('Sales', 'सेल्स')})</span>
+                      <span className="font-mono text-emerald-400">{t('Current PIN: 123456', 'सध्याचा PIN: 123456')}</span>
                     </div>
                   </div>
 
@@ -12613,7 +12668,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 hover:from-blue-500 hover:via-indigo-500 hover:to-emerald-500 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-indigo-600/30 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
                   >
                     <span>🔐</span>
-                    <span>पोर्टलमध्ये सुरक्षित लॉगिन करा</span>
+                    <span>{t('Secure Portal Login', 'पोर्टलमध्ये सुरक्षित लॉगिन करा')}</span>
                     <span>➔</span>
                   </button>
                 </form>
@@ -12621,14 +12676,14 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                 {/* Information Notice about current setup vs future Firebase */}
                 <div className="mt-5 pt-4 border-t border-slate-800 text-center">
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    💡 <b className="text-slate-300">सोयीसाठी सूचना:</b> काम सुलभ होण्यासाठी सध्या सर्वांचा पासवर्ड <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">123456</span> ठेवला आहे. प्रोजेक्ट फायनल झाल्यावर फायरबेस (Firebase) ईमेल लॉगिन सुरू करू.
+                    💡 <b className="text-slate-300">{t('Notice:', 'सोयीसाठी सूचना:')}</b> {t('For convenience and testing, the password for all team members is set to', 'काम सुलभ होण्यासाठी सध्या सर्वांचा पासवर्ड')} <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">123456</span>. {t('Individual Firebase email verification will be enabled upon project completion.', 'प्रोजेक्ट फायनल झाल्यावर फायरबेस (Firebase) ईमेल लॉगिन सुरू करू.')}
                   </p>
                 </div>
               </div>
 
               {/* Footer info */}
               <div className="text-center mt-6 text-xs text-slate-500">
-                माधव एंटरप्रायझेस व शिवओम सेल्स © २०२६ &nbsp;|&nbsp; नागपूर, महाराष्ट्र
+                {t('Madhav Enterprises & Shivom Sales © 2026 | Nagpur, Maharashtra', 'माधव एंटरप्रायझेस व शिवओम सेल्स © २०२६ | नागपूर, महाराष्ट्र')}
               </div>
             </div>
           </div>
@@ -12651,26 +12706,52 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                     currentFirmKey === 'MADHAV' ? 'bg-blue-900/80 text-blue-300 border border-blue-700' : 'bg-emerald-900/80 text-emerald-300 border border-emerald-700'
                   }`}>
-                    {currentFirmKey === 'MADHAV' ? 'ग्रीन शेफ अधिकृत वितरक (GST)' : 'शिवओम Non-GST / रोख व स्पेअर्स'}
+                    {currentFirmKey === 'MADHAV' ? t('Green Chef Authorized Distributor (GST)', 'ग्रीन शेफ अधिकृत वितरक (GST)') : t('Shivom Non-GST / Retail & Spares', 'शिवओम Non-GST / रोख व स्पेअर्स')}
                   </span>
                 </h1>
                 <p className="text-xs text-slate-400">
-                  {currentFirmKey === 'MADHAV' ? 'GSTIN: 27BQIPP3836Q1ZZ' : 'Non-GST / कॅश एस्टिमेट्स'} | 
-                  सक्रिय: <b className="text-amber-400">{currentUser.avatar} {currentUser.nameMr}</b> ({currentUser.badge})
+                  {currentFirmKey === 'MADHAV' ? 'GSTIN: 27BQIPP3836Q1ZZ' : t('Non-GST Retail / Cash Estimates', 'Non-GST / कॅश एस्टिमेट्स')} | 
+                  {t('Active:', 'सक्रिय:')} <b className="text-amber-400">{currentUser.avatar} {t(currentUser.name, currentUser.nameMr)}</b> ({t(currentUser.badgeEn, currentUser.badgeMr)})
                 </p>
               </div>
             </div>
 
             {/* Top Bar Controls */}
             <div className="flex flex-wrap items-center gap-2 relative">
+              {/* Language Switcher Toggle */}
+              <div className="bg-slate-800 p-1 rounded-xl flex items-center border border-slate-700 text-xs font-bold shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => switchLang('en')}
+                  className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                    lang === 'en' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Switch to English Version"
+                >
+                  <span>🇬🇧</span>
+                  <span className="hidden md:inline">English</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchLang('mr')}
+                  className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                    lang === 'mr' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="मराठी आवृत्ती निवडा"
+                >
+                  <span>🇮🇳</span>
+                  <span className="hidden md:inline">मराठी</span>
+                </button>
+              </div>
+
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
                 className="bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-200 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
-                title="लॉग आऊट करा (Logout)"
+                title={t('Logout of Session', 'लॉग आऊट करा')}
               >
                 <span>🚪</span>
-                <span className="hidden sm:inline">लॉग आऊट</span>
+                <span className="hidden sm:inline">{t('Logout', 'लॉग आऊट')}</span>
               </button>
 
               {/* Profile Selector Dropdown */}
@@ -12680,9 +12761,9 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                   className="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center space-x-1.5 text-xs font-bold transition-all shadow-sm"
                 >
                   <span>{currentUser.avatar}</span>
-                  <span className="text-white">{currentUser.nameMr}</span>
+                  <span className="text-white">{t(currentUser.name, currentUser.nameMr)}</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-700 text-slate-300">
-                    {currentUser.role === 'ADMIN' ? 'सुपर ॲडमिन' : 'सेल्स'}
+                    {currentUser.role === 'ADMIN' ? t('Super Admin', 'सुपर ॲडमिन') : (currentUser.isManager ? t('Manager', 'मॅनेजर') : t('Sales Rep', 'सेल्स'))}
                   </span>
                   <span className="text-slate-400 text-[10px]">▼</span>
                 </button>
@@ -12690,7 +12771,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                 {isProfileDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-50 space-y-1">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 border-b border-slate-800">
-                      संस्था नियंत्रण व सेल्स टीम निवडा:
+                      {t('Select Organization Control & Team Member:', 'संस्था नियंत्रण व सेल्स टीम निवडा:')}
                     </div>
                     {Object.values(MASTER_TEAM).map((u) => (
                       <button
@@ -12706,12 +12787,12 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                           <span className="text-base">{u.avatar}</span>
                           <div>
                             <div className="font-bold flex items-center gap-1.5">
-                              <span>{u.nameMr}</span>
+                              <span>{t(u.name, u.nameMr)}</span>
                               <span className="text-[10px] font-mono text-emerald-400">· {u.phone}</span>
                             </div>
-                            <div className="text-[10px] text-slate-300">{u.designation}</div>
-                            {u.partnerNote && (
-                              <div className="text-[9px] text-amber-300 mt-0.5">⚠️ {u.partnerNote}</div>
+                            <div className="text-[10px] text-slate-300">{t(u.designationEn, u.designationMr)}</div>
+                            {(u.partnerNoteEn || u.partnerNoteMr) && (
+                              <div className="text-[9px] text-amber-300 mt-0.5">⚠️ {t(u.partnerNoteEn, u.partnerNoteMr)}</div>
                             )}
                           </div>
                         </div>
@@ -12728,7 +12809,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                         className="w-full text-center p-2 rounded-xl text-xs flex items-center justify-center gap-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 font-bold transition-all"
                       >
                         <span>🚪</span>
-                        <span>खाते बदला / लॉग आऊट</span>
+                        <span>{t('Switch Account / Logout', 'खाते बदला / लॉग आऊट')}</span>
                       </button>
                     </div>
                   </div>
@@ -12743,7 +12824,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     currentFirmKey === 'MADHAV' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <span>🔵 माधव (GST)</span>
+                  <span>🔵 {t('Madhav (GST)', 'माधव (GST)')}</span>
                 </button>
                 <button
                   onClick={() => switchFirm("SHIVOM")}
@@ -12751,7 +12832,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     currentFirmKey === 'SHIVOM' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <span>🟢 शिवओम (Non-GST)</span>
+                  <span>🟢 {t('Shivom (Non-GST)', 'शिवओम (Non-GST)')}</span>
                 </button>
               </div>
 
@@ -12787,7 +12868,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      {currentFirmKey === 'MADHAV' ? 'माधव अधिकृत प्रतिनिधी' : 'शिवओम नॉन-जीएसटी प्रतिनिधी'}
+                      {currentFirmKey === 'MADHAV' ? t('Madhav Authorized Representative', 'माधव अधिकृत प्रतिनिधी') : t('Shivom Non-GST Representative', 'शिवओम नॉन-जीएसटी प्रतिनिधी')}
                     </span>
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                       <span>{currentUser.avatar} {currentUser.nameMr}</span>
@@ -12862,7 +12943,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                         onClick={() => switchFirm(currentFirmKey === 'MADHAV' ? 'SHIVOM' : 'MADHAV')}
                         className="px-2.5 py-0.5 rounded-md bg-emerald-700 text-white font-bold text-[10px]"
                       >
-                        {currentFirmKey === 'MADHAV' ? 'शिवओमवर जा ➔' : 'माधववर जा ➔'}
+                        {currentFirmKey === 'MADHAV' ? t('Switch to Shivom ➔', 'शिवओमवर जा ➔') : t('Switch to Madhav ➔', 'माधववर जा ➔')}
                       </button>
                     </div>
                   </div>
@@ -12968,7 +13049,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                     <span>१. पार्टी खाते निवडा (Select Party)</span>
                     <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[11px] font-mono font-bold">
-                      {currentFirmKey === 'MADHAV' ? `${gstClients.length} GST पार्ट्या` : `${nonGstDealers.length} Non-GST डीलर्स`}
+                      {currentFirmKey === 'MADHAV' ? `${gstClients.length} ${t('GST Parties', 'GST पार्ट्या')}` : `${nonGstDealers.length} ${t('Non-GST Dealers', 'Non-GST डीलर्स')}`}
                     </span>
                   </label>
                   <div className="flex items-center space-x-2">
@@ -13301,7 +13382,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                               {/* On-Site Rate Input Box */}
                               <div className="flex items-center space-x-2 mt-1.5">
                                 <label className="text-[11px] font-bold text-slate-600 whitespace-nowrap">
-                                  दर ₹ (ऑन-साइट):
+                                  {t('Rate ₹ (On-Site):', 'दर ₹ (ऑन-साइट):')}
                                 </label>
                                 <div className="relative">
                                   <span className="absolute left-2 top-1 text-[11px] text-slate-400 font-bold">₹</span>
@@ -13330,15 +13411,15 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                             <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1.5 flex-shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                               <div className="flex items-center space-x-1 text-[10px]">
                                 <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold" title="गोदामात प्रत्यक्ष साठा">
-                                  गोदाम: {prod.physical}
+                                  {t('Godown:', 'गोदाम:')} {prod.physical}
                                 </span>
                                 <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-semibold" title="ऑर्डर्ससाठी बुक झालेला साठा">
-                                  बुक: {prod.booked}
+                                  {t('Booked:', 'बुक:')} {prod.booked}
                                 </span>
                                 <span className={`px-2 py-0.5 rounded font-bold ${
                                   available > 10 ? 'bg-emerald-100 text-emerald-800' : available > 0 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
                                 }`} title="विक्रीसाठी शिल्लक">
-                                  उपलब्ध: {available}
+                                  {t('Available:', 'उपलब्ध:')} {available}
                                 </span>
                               </div>
 
@@ -13377,7 +13458,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                                         : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
                                     }`}
                                   >
-                                    {isOutOfStock ? 'स्टॉक संपला' : '+ बिलात जोडा'}
+                                    {isOutOfStock ? t('Out of Stock', 'स्टॉक संपला') : t('+ Add to Order', '+ बिलात जोडा')}
                                   </button>
                                 )}
                               </div>
@@ -13389,7 +13470,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                             <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
                               <div className="font-bold flex items-center space-x-1">
                                 <Icon name="alert" className="w-3.5 h-3.5 text-amber-600" />
-                                <span>पर्यायी उपलब्ध वस्तू (In-Stock Substitute):</span>
+                                <span>{t('In-Stock Substitute Available:', 'पर्यायी उपलब्ध वस्तू (In-Stock Substitute):')}</span>
                               </div>
                               <div className="mt-1 space-y-1">
                                 {prod.substitute_ids.map(subId => {
@@ -13402,7 +13483,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                                         onClick={() => addToCart(subProd, 1)}
                                         className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[11px]"
                                       >
-                                        + बदला
+                                        {t('+ Switch', '+ बदला')}
                                       </button>
                                     </div>
                                   );
@@ -13422,10 +13503,10 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                 <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-blue-500/30 sticky bottom-3 z-30 space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <span className="font-bold text-slate-800 text-sm">
-                      ऑर्डर कार्ट ({cart.length} प्रकारच्या वस्तू) - {currentFirm.name}
+                      {t('Order Cart', 'ऑर्डर कार्ट')} ({cart.length} {t('items', 'प्रकारच्या वस्तू')}) - {currentFirm.name}
                     </span>
                     <button onClick={() => setCart([])} className="text-xs text-rose-500 font-bold hover:underline">
-                      सर्व रद्द करा (Clear)
+                      {t('Clear All', 'सर्व रद्द करा (Clear)')}
                     </button>
                   </div>
 
@@ -13449,7 +13530,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                             value={item.price}
                             onChange={(e) => updateCartItemPrice(item.product_id, e.target.value)}
                             className="w-16 p-1 bg-white border border-slate-300 rounded font-bold text-right text-xs text-blue-700"
-                            title="दर बदला"
+                            title={t('Edit Price', 'दर बदला')}
                           />
                         </div>
 
@@ -13487,7 +13568,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                             type="button"
                             onClick={() => setCart(cart.filter(ci => ci.product_id !== item.product_id))}
                             className="text-rose-500 hover:text-rose-700 font-bold text-sm px-1"
-                            title="वस्तू काढा"
+                            title={t('Remove Item', 'वस्तू काढा')}
                           >
                             ✕
                           </button>
@@ -13498,7 +13579,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
 
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
                     <label className="font-bold text-slate-700 whitespace-nowrap">
-                      आज जमा रोख / UPI रक्कम (Paid Today):
+                      {t("Today's Paid Cash / UPI (Paid Today):", "आज जमा रोख / UPI रक्कम (Paid Today):")}
                     </label>
                     <div className="relative">
                       <span className="absolute left-2.5 top-2 text-slate-400 font-bold">₹</span>
@@ -13516,19 +13597,19 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                   {/* Vyapar Formula Box */}
                   <div className="mt-2 p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
                     <div className="flex justify-between text-slate-300">
-                      <span>चालू ऑर्डर एकूण:</span>
+                      <span>{t('Current Order Total:', 'चालू ऑर्डर एकूण:')}</span>
                       <span className="font-mono font-semibold">₹{billSummary.currentOrderTotal.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-slate-300">
-                      <span>(+) मागील येणे बाकी:</span>
+                      <span>{t('(+) Previous Outstanding Due:', '(+) मागील येणे बाकी:')}</span>
                       <span className="font-mono font-semibold">₹{billSummary.previousOutstanding.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-emerald-400">
-                      <span>(-) आज मिळालेली रक्कम:</span>
+                      <span>{t('(-) Received / Paid Today:', '(-) आज मिळालेली रक्कम:')}</span>
                       <span className="font-mono font-semibold">₹{billSummary.paidToday.toLocaleString()}</span>
                     </div>
                     <div className="pt-2 border-t border-slate-700 flex justify-between text-sm font-bold text-amber-300">
-                      <span>(=) एकूण शिल्लक बाकी (Net Balance Due):</span>
+                      <span>{t('(=) Net Balance Due:', '(=) एकूण शिल्लक बाकी (Net Balance Due):')}</span>
                       <span className="font-mono text-base font-extrabold">₹{billSummary.netBalanceDue.toLocaleString()}</span>
                     </div>
                   </div>
@@ -13537,7 +13618,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     <div className="mt-2 p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between">
                       <div className="flex items-center space-x-1.5 font-bold">
                         <Icon name="alert" className="w-4 h-4 text-rose-400" />
-                        <span>⚠️ क्रेडिट मर्यादा (₹{(selectedClient.credit_limit || 10000).toLocaleString()}) ओलांडली!</span>
+                        <span>⚠️ {t('Credit Limit', 'क्रेडिट मर्यादा')} (₹{(selectedClient.credit_limit || 10000).toLocaleString()}) {t('Exceeded!', 'ओलांडली!')}</span>
                       </div>
                       <span className="font-mono font-bold text-[11px] bg-rose-500/40 px-2 py-0.5 rounded text-white">
                         +₹{(billSummary.netBalanceDue - (selectedClient.credit_limit || 10000)).toLocaleString()} जास्त
@@ -13552,7 +13633,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     }`}
                   >
                     <Icon name="check" className="w-4 h-4" />
-                    <span>ऑर्डर पक्की करा व बिल बनवा ({activeSalesman.name})</span>
+                    <span>{t('Confirm Order & Generate Invoice', 'ऑर्डर पक्की करा व बिल बनवा')} ({activeSalesman.name})</span>
                   </button>
                 </div>
               )}
@@ -13570,7 +13651,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     activeAdminTab === 'OVERVIEW' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
-                  📊 एकत्रित डॅशबोर्ड (Overview)
+                  📊 {t('Executive Overview', 'एकत्रित डॅशबोर्ड (Overview)')}
                 </button>
                 <button
                   onClick={() => setActiveAdminTab("DISPATCH")}
@@ -13580,7 +13661,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                       : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-200'
                   }`}
                 >
-                  <span>🚚 बुक ऑर्डर्स व डिस्पॅच</span>
+                  <span>🚚 {t('Booked Orders & Dispatch', 'बुक ऑर्डर्स व डिस्पॅच')}</span>
                   <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-900 font-black">
                     {ordersHistory.filter(o => o.status === 'BOOKED').length}
                   </span>
@@ -13591,7 +13672,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     activeAdminTab === 'INVENTORY' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
-                  📦 गोदाम स्टॉक (Live 3-Way Stock)
+                  📦 {t('Warehouse Live Stock (3-Way)', 'गोदाम स्टॉक (Live 3-Way Stock)')}
                 </button>
                 <button
                   onClick={() => setActiveAdminTab("OVERDUE")}
@@ -13601,7 +13682,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                       : 'bg-white text-rose-700 hover:bg-rose-50 border border-rose-200'
                   }`}
                 >
-                  <span>🔴 थकीत येणे बाकी व तगादा</span>
+                  <span>🔴 {t('Overdue Balances & Recovery', 'थकीत येणे बाकी व तगादा')}</span>
                   <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-100 text-rose-800 font-black">
                     {overdueClients.length}
                   </span>
@@ -13612,7 +13693,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     activeAdminTab === 'COLLECTIONS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
-                  💰 दैनिक कॅश व खर्च नोंदवही (Cash & Expenses)
+                  💰 {t('Daily Cash & Expense Register', 'दैनिक कॅश व खर्च नोंदवही (Cash & Expenses)')}
                 </button>
               </div>
 
@@ -13627,11 +13708,11 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                       </div>
                       <div>
                         <h3 className="font-extrabold text-sm md:text-base text-slate-900 flex items-center gap-2">
-                          <span>श्याम पिंपळकर (मुख्य मालक / सुपर ॲडमिन) & रोशन ठाकरे (मालक)</span>
-                          <span className="text-[10px] px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold">पूर्ण नियंत्रण</span>
+                          <span>{t('Shyam Pimplkar (Super Admin) & Roshan Thakre (Owner)', 'श्याम पिंपळकर (मुख्य मालक / सुपर ॲडमिन) & रोशन ठाकरे (मालक)')}</span>
+                          <span className="text-[10px] px-2 py-0.5 bg-emerald-600 text-white rounded-full font-bold">{t('Full Control', 'पूर्ण नियंत्रण')}</span>
                         </h3>
                         <p className="text-xs text-slate-600">
-                          श्याम पिंपळकर (मो: 93095 43825) · रोशन ठाकरे (मो: 93723 76310) | प्रशांत हजारे यांच्यामार्फत दोन्ही फर्म्सचे बिलिंग, टेम्पो डिस्पॅच व कॅश कलेक्शन नियंत्रण.
+                          {t('Shyam Pimplkar (Mob: 93095 43825) · Roshan Thakre (Mob: 93723 76310) | Centralized control of both firms billing, tempo dispatch & cash collections via Prashik Hajare.', 'श्याम पिंपळकर (मो: 93095 43825) · रोशन ठाकरे (मो: 93723 76310) | प्रशांत हजारे यांच्यामार्फत दोन्ही फर्म्सचे बिलिंग, टेम्पो डिस्पॅच व कॅश कलेक्शन नियंत्रण.')}
                         </p>
                       </div>
                     </div>
@@ -13648,8 +13729,8 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                           👥
                         </div>
                         <div>
-                          <h3 className="font-bold text-slate-800 text-sm">फील्ड सेल्स टीम व मॅनेजमेंट कामगिरी (Sales Team Performance)</h3>
-                          <p className="text-xs text-slate-500">श्याम पिंपळकर यांच्या नियंत्रणाखाली कार्यरत</p>
+                          <h3 className="font-bold text-slate-800 text-sm">{t('Field Sales Team & Management Performance', 'फील्ड सेल्स टीम व मॅनेजमेंट कामगिरी (Sales Team Performance)')}</h3>
+                          <p className="text-xs text-slate-500">{t('Operating under Master Control of Shyam Pimplkar', 'श्याम पिंपळकर यांच्या नियंत्रणाखाली कार्यरत')}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -13657,9 +13738,9 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                           onClick={() => setActiveModal('TEMPO_LOADING')}
                           className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center space-x-1 shadow-sm"
                         >
-                          <span>🚚 टेम्पो लोडिंग सारांश</span>
+                          <span>{t('🚚 Tempo Loading Sheet', '🚚 टेम्पो लोडिंग सारांश')}</span>
                         </button>
-                        <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-600">३ एक्झिक्युटिव्ह</span>
+                        <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-600">{t('3 Team Executives', '३ एक्झिक्युटिव्ह')}</span>
                       </div>
                     </div>
 
@@ -15505,7 +15586,7 @@ ${order.items.map((it, idx) => `${idx + 1}. *${it.name}* (${it.quantity} नग)
                     onClick={() => window.print()}
                     className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow"
                   >
-                    🖨️ टेम्पो लोडिंग शीट प्रिंट करा
+                    {t('🖨️ Print Tempo Loading Sheet', '🖨️ टेम्पो लोडिंग शीट प्रिंट करा')}
                   </button>
                 </div>
               </div>
