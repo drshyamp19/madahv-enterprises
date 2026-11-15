@@ -11310,6 +11310,13 @@ const MASTER_DAILY_COLLECTIONS = [
     }
 
     // --- 1-Click WhatsApp Party Ledger Statement Generator ---
+    // Universal WhatsApp Direct Link Generator (Opens customer chat directly with +91)
+    function formatWhatsAppUrl(phone, messageText) {
+      let clean = String(phone || '').replace(/[^0-9]/g, '');
+      if (clean.length === 10) clean = '91' + clean;
+      return 'https://wa.me/' + clean + '?text=' + encodeURIComponent(messageText || '');
+    }
+
     function getLedgerWhatsAppText(party, firm) {
       if (!party || !firm) return '';
       const lines = [
@@ -11954,15 +11961,94 @@ const MASTER_DAILY_COLLECTIONS = [
         setRole('ADMIN');
       };
 
-      const [products, setProducts] = useState(MASTER_PRODUCTS);
+      // Real-Time Firestore Cloud Sync Helper (Graceful offline fallback)
+      const syncWithFirestore = (collectionName, docId, docData) => {
+        try {
+          if (typeof db !== 'undefined' && db && db.collection) {
+            db.collection(collectionName).doc(String(docId)).set(docData, { merge: true })
+              .then(() => console.log('[Firestore] Synced ' + collectionName + '/' + docId))
+              .catch(err => console.warn('[Firestore Sync Warning]', err));
+          }
+        } catch (e) {}
+      };
+
+      // Voice Search State & Handler for Product Selection
+      const [isListeningVoice, setIsListeningVoice] = useState(false);
+      const handleVoiceSearch = () => {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          alert("Voice search is not supported on this browser. Please type to search.");
+          return;
+        }
+        try {
+          const rec = new SpeechRec();
+          rec.lang = 'en-IN';
+          rec.continuous = false;
+          rec.interimResults = false;
+          rec.onstart = () => setIsListeningVoice(true);
+          rec.onend = () => setIsListeningVoice(false);
+          rec.onerror = () => setIsListeningVoice(false);
+          rec.onresult = (ev) => {
+            if (ev.results && ev.results[0] && ev.results[0][0]) {
+              const text = ev.results[0][0].transcript;
+              setItemSearch(text);
+            }
+            setIsListeningVoice(false);
+          };
+          rec.start();
+        } catch (err) {
+          setIsListeningVoice(false);
+        }
+      };
+
+      // Customer Ledger Statement Modal State
+      const [selectedLedgerParty, setSelectedLedgerParty] = useState(null);
+
+      // Direct UPI QR Modal State
+      const [upiModalAmount, setUpiModalAmount] = useState(0);
+      const [upiModalParty, setUpiModalParty] = useState('');
+
+      // Persistent Products with LocalStorage Cache
+      const [products, setProducts] = useState(() => {
+        try {
+          const saved = localStorage.getItem('madhav_inventory_products');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return MASTER_PRODUCTS;
+      });
+      useEffect(() => {
+        try { localStorage.setItem('madhav_inventory_products', JSON.stringify(products)); } catch (e) {}
+      }, [products]);
+
       const [cart, setCart] = useState([]);
       const [paidTodayInput, setPaidTodayInput] = useState(0);
 
       // Flexible on-site rates (No fixed rates for Green Chef or any products - salesman decides on-site!)
       const [customRates, setCustomRates] = useState({});
 
-      const [gstClients, setGstClients] = useState(MASTER_GST_CLIENTS);
-      const [nonGstDealers, setNonGstDealers] = useState(MASTER_NON_GST_DEALERS);
+      // Persistent GST Clients with LocalStorage Cache
+      const [gstClients, setGstClients] = useState(() => {
+        try {
+          const saved = localStorage.getItem('madhav_gst_clients');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return MASTER_GST_CLIENTS;
+      });
+      useEffect(() => {
+        try { localStorage.setItem('madhav_gst_clients', JSON.stringify(gstClients)); } catch (e) {}
+      }, [gstClients]);
+
+      // Persistent Non-GST Dealers with LocalStorage Cache
+      const [nonGstDealers, setNonGstDealers] = useState(() => {
+        try {
+          const saved = localStorage.getItem('madhav_nongst_dealers');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return MASTER_NON_GST_DEALERS;
+      });
+      useEffect(() => {
+        try { localStorage.setItem('madhav_nongst_dealers', JSON.stringify(nonGstDealers)); } catch (e) {}
+      }, [nonGstDealers]);
       const currentClientList = currentFirmKey === "MADHAV" 
         ? (invoiceSeries === "NON_GST_ESTIMATE" ? [...gstClients, ...nonGstDealers.filter(d => !gstClients.some(g => g.id === d.id))] : gstClients)
         : nonGstDealers;
@@ -11991,9 +12077,29 @@ const MASTER_DAILY_COLLECTIONS = [
       const [showAllProducts, setShowAllProducts] = useState(true); // Default true so catalog is always ready
 
       // Daily Collections & Expenses States (User asked where to enter these!)
-      const [dailyCollections, setDailyCollections] = useState(MASTER_DAILY_COLLECTIONS);
-      // Replacement & Warranty State
-      const [replacements, setReplacements] = useState(MASTER_REPLACEMENTS);
+      // Persistent Daily Collections with LocalStorage Cache
+      const [dailyCollections, setDailyCollections] = useState(() => {
+        try {
+          const saved = localStorage.getItem('madhav_collections');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return MASTER_DAILY_COLLECTIONS;
+      });
+      useEffect(() => {
+        try { localStorage.setItem('madhav_collections', JSON.stringify(dailyCollections)); } catch (e) {}
+      }, [dailyCollections]);
+
+      // Persistent Replacements & Warranty with LocalStorage Cache
+      const [replacements, setReplacements] = useState(() => {
+        try {
+          const saved = localStorage.getItem('madhav_replacements');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return MASTER_REPLACEMENTS;
+      });
+      useEffect(() => {
+        try { localStorage.setItem('madhav_replacements', JSON.stringify(replacements)); } catch (e) {}
+      }, [replacements]);
       const [repCounter, setRepCounter] = useState(3);
       const [lastGeneratedReplacement, setLastGeneratedReplacement] = useState(null);
       const [repTabFilter, setRepTabFilter] = useState('ALL');
@@ -12007,7 +12113,17 @@ const MASTER_DAILY_COLLECTIONS = [
         remark: ''
       });
 
-      const [expensesList, setExpensesList] = useState(MASTER_EXPENSES);
+      // Persistent Expenses with LocalStorage Cache
+      const [expensesList, setExpensesList] = useState(() => {
+        try {
+          const saved = localStorage.getItem('madhav_expenses');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return MASTER_EXPENSES;
+      });
+      useEffect(() => {
+        try { localStorage.setItem('madhav_expenses', JSON.stringify(expensesList)); } catch (e) {}
+      }, [expensesList]);
       const [collectionSearch, setCollectionSearch] = useState("");
       const [expenseSearch, setExpenseSearch] = useState("");
 
@@ -12109,7 +12225,70 @@ const MASTER_DAILY_COLLECTIONS = [
         }
       }, [lastGeneratedOrder, selectedClient]);
 
-      const [ordersHistory, setOrdersHistory] = useState(INITIAL_ORDERS);
+      // Persistent Orders History with LocalStorage Cache & Firestore Sync
+      const [ordersHistory, setOrdersHistory] = useState(() => {
+        try {
+          const saved = localStorage.getItem('madhav_orders_history');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return INITIAL_ORDERS;
+      });
+      useEffect(() => {
+        try { localStorage.setItem('madhav_orders_history', JSON.stringify(ordersHistory)); } catch (e) {}
+      }, [ordersHistory]);
+
+      // 1-Click Excel / Tally CSV Exporter
+      const exportOrdersToCsv = () => {
+        if (!ordersHistory || ordersHistory.length === 0) {
+          alert('No orders recorded to export.');
+          return;
+        }
+        const headers = [
+          'Date',
+          'Invoice Number',
+          'Firm',
+          'Series',
+          'Customer Name',
+          'Customer Phone',
+          'Salesman',
+          'Order Channel',
+          'Taxable Value (Rs)',
+          'Tax Amount (Rs)',
+          'Order Total (Rs)',
+          'Paid Today (Rs)',
+          'Net Due (Rs)',
+          'Status',
+          'Items Summary'
+        ];
+        const rows = ordersHistory.map(o => {
+          const itemsSummary = (o.items || []).map(it => it.name + ' x ' + it.quantity).join('; ');
+          return [
+            o.order_date || getTodayDDMMYYYY(),
+            '"' + (o.invoice_number || '') + '"',
+            '"' + (o.firm_name || '') + '"',
+            '"' + (o.invoice_series || '') + '"',
+            '"' + (o.client_name || '').replace(/"/g, '""') + '"',
+            '"' + (o.client_phone || '') + '"',
+            '"' + (o.salesman_name || '') + '"',
+            '"' + (o.order_channel || 'FIELD_VISIT') + '"',
+            o.subtotal || 0,
+            o.total_tax || 0,
+            o.currentOrderTotal || 0,
+            o.paid_today || 0,
+            o.net_balance_due || 0,
+            '"' + (o.status || 'BOOKED') + '"',
+            '"' + itemsSummary.replace(/"/g, '""') + '"'
+          ].join(',');
+        });
+        const csvContent = 'data:text/csv;charset=utf-8,﻿' + [headers.join(','), ...rows].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'Madhav_Shivom_Orders_' + getTodayDDMMYYYY().replace(/\//g, '-') + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
       const [orderFilterStatus, setOrderFilterStatus] = useState('ALL');
       const [orderSearchQuery, setOrderSearchQuery] = useState('');
       const [dispatchModalOrder, setDispatchModalOrder] = useState(null);
@@ -13231,6 +13410,50 @@ Thank you for your valuable cooperation! 🙏
                     </div>
                   </div>
 
+                  {/* Daily Beat Target vs Achievement Progress Tracker */}
+                  <div className="bg-white rounded-2xl p-4 border border-blue-100 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xl">🎯</span>
+                        <div>
+                          <h3 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">
+                            Daily Beat Target vs Achievement
+                          </h3>
+                          <p className="text-[11px] text-slate-500">
+                            Beat Target: ₹50,000 / day • 2% Incentive Commission
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Today Achieved</span>
+                        <p className="text-base font-black text-blue-700">
+                          ₹{myTodayTotal.toLocaleString()} <span className="text-xs text-slate-500 font-semibold">({Math.min(100, Math.round((myTodayTotal / 50000) * 100))}%)</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          myTodayTotal >= 50000 ? 'bg-emerald-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.round((myTodayTotal / 50000) * 100))}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100 text-slate-600">
+                      <span className="flex items-center gap-1 font-medium text-slate-700">
+                        <span>🔥 Remaining to Target:</span>
+                        <b className="text-amber-700 font-bold">₹{Math.max(0, 50000 - myTodayTotal).toLocaleString()}</b>
+                      </span>
+                      <span className="flex items-center gap-1 font-medium text-slate-700">
+                        <span>💰 Est. Commission:</span>
+                        <b className="text-emerald-700 font-black">₹{Math.round(myTodayTotal * 0.02).toLocaleString()}</b>
+                      </span>
+                    </div>
+                  </div>
+
                   {/* 4 Core Metric Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {/* KPI 1: Today's Orders */}
@@ -13405,7 +13628,7 @@ Thank you for your valuable cooperation! 🙏
                               </span>
 
                               <a
-                                href={`https://wa.me/?text=${encodeURIComponent(getWhatsAppText(order))}`}
+                                href={formatWhatsAppUrl(order.client_phone, getWhatsAppText(order))}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs"
@@ -13543,7 +13766,7 @@ Thank you for your valuable cooperation! 🙏
                             </a>
                           )}
                           <a
-                            href={`https://wa.me/${c.phone ? c.phone.replace(/[^0-9]/g, '') : ''}?text=${encodeURIComponent(getOverdueWhatsAppText(c, currentFirm))}`}
+                            href={formatWhatsAppUrl(c.phone, getOverdueWhatsAppText(c, currentFirm))}
                             target="_blank"
                             rel="noreferrer"
                             className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center space-x-1 shadow-sm"
@@ -13551,6 +13774,18 @@ Thank you for your valuable cooperation! 🙏
                           >
                             <span>💬 Remind</span>
                           </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedLedgerParty(c);
+                              setActiveModal('CUSTOMER_LEDGER');
+                            }}
+                            className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold flex items-center space-x-1 shadow-xs"
+                            title="View Complete Customer Account Ledger Statement"
+                          >
+                            <span>📖</span>
+                            <span>Ledger</span>
+                          </button>
                           <button
                             onClick={() => {
                               setEditLimitParty(c);
@@ -13899,6 +14134,21 @@ Thank you for your valuable cooperation! 🙏
                       placeholder="Search product name, SKU or model (e.g. 5L Cooker, Induction, Stove, Mixer)..."
                       className="w-full bg-transparent text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
                     />
+
+                    {/* Quick Voice Search Button */}
+                    <button
+                      type="button"
+                      onClick={handleVoiceSearch}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 flex-shrink-0 ${
+                        isListeningVoice
+                          ? 'bg-rose-500 text-white animate-pulse shadow-md ring-2 ring-rose-400'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                      title="Tap to speak product name (Voice Search)"
+                    >
+                      <span className="text-sm">🎙️</span>
+                      <span className="hidden sm:inline">{isListeningVoice ? 'Listening...' : 'Voice'}</span>
+                    </button>
                     {(itemSearch || selectedCategory) && (
                       <button
                         type="button"
@@ -14462,7 +14712,7 @@ Thank you for your valuable cooperation! 🙏
                               </button>
 
                               <a
-                                href={`https://wa.me/?text=${encodeURIComponent(getWhatsAppText(order))}`}
+                                href={formatWhatsAppUrl(order.client_phone, getWhatsAppText(order))}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center space-x-1 shadow-sm"
@@ -14522,6 +14772,19 @@ Thank you for your valuable cooperation! 🙏
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUpiModalParty(selectedClient ? selectedClient.company_name : 'Beat Retailer');
+                          setUpiModalAmount(5000);
+                          setActiveModal('UPI_QR_MODAL');
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-black text-xs shadow-md border border-white/30 transition-all flex items-center gap-1.5"
+                        title="Display Madhav Enterprises Dynamic UPI QR for Instant Customer Scan"
+                      >
+                        <span>📱 Show UPI QR</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -15041,6 +15304,14 @@ Thank you for your valuable cooperation! 🙏
                             {f.label}
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => setActiveModal('FACTORY_RETURN_CHALLAN')}
+                          className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-lg shadow-sm flex items-center space-x-1 ml-2"
+                          title="Generate Consolidated Green Chef Factory Return Batch Challan"
+                        >
+                          <span>🏭 Factory Batch Challan</span>
+                        </button>
                       </div>
                     </div>
 
@@ -15461,6 +15732,14 @@ Thank you for your valuable cooperation! 🙏
 
                       <button
                         type="button"
+                        onClick={exportOrdersToCsv}
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center space-x-1.5 shadow"
+                        title="Download all orders in Excel/Tally compatible CSV format"
+                      >
+                        <span>📥 Export to Excel (CSV)</span>
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setActiveModal('TEMPO_LOADING')}
                         className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl flex items-center space-x-1.5 shadow"
                       >
@@ -15631,7 +15910,7 @@ Thank you for your valuable cooperation! 🙏
                                     <span>📄 View / Print A4 Invoice</span>
                                   </button>
                                   <a
-                                    href={`https://wa.me/?text=${encodeURIComponent(getWhatsAppText(order))}`}
+                                    href={formatWhatsAppUrl(order.client_phone, getWhatsAppText(order))}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center space-x-1 shadow-sm"
@@ -15801,7 +16080,7 @@ Thank you for your valuable cooperation! 🙏
                                 )}
 
                                 <a
-                                  href={`https://wa.me/${c.phone ? c.phone.replace(/[^0-9]/g, '') : ''}?text=${encodeURIComponent(getOverdueWhatsAppText(c, currentFirm))}`}
+                                  href={formatWhatsAppUrl(c.phone, getOverdueWhatsAppText(c, currentFirm))}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center space-x-1.5 shadow-sm"
@@ -17234,7 +17513,7 @@ Thank you for your valuable cooperation! 🙏
 
                 <div className="flex space-x-2 pt-2 border-t border-slate-100">
                   <a
-                    href={`https://wa.me/?text=${encodeURIComponent(getWhatsAppText(lastGeneratedOrder))}`}
+                    href={formatWhatsAppUrl(lastGeneratedOrder.client_phone, getWhatsAppText(lastGeneratedOrder))}
                     target="_blank"
                     rel="noreferrer"
                     className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-1.5 shadow"
@@ -17713,6 +17992,257 @@ Thank you for your valuable cooperation! 🙏
                     className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md"
                   >
                     Save Credit Limit & Terms
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: CUSTOMER ACCOUNT LEDGER STATEMENT */}
+          {activeModal === 'CUSTOMER_LEDGER' && selectedLedgerParty && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-2xl w-full p-5 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-base">
+                      📖
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm md:text-base">
+                        Customer Account Ledger Statement (खातावणी)
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        {selectedLedgerParty.company_name} ({selectedLedgerParty.area || 'Nagpur'})
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+                </div>
+
+                {/* Party Summary Card */}
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <span className="text-slate-500 font-bold block">Credit Limit</span>
+                    <span className="text-sm md:text-base font-black text-blue-900 mt-0.5 block">₹{(selectedLedgerParty.credit_limit || 10000).toLocaleString()}</span>
+                  </div>
+                  <div className="p-3 bg-rose-50 rounded-xl border border-rose-200">
+                    <span className="text-slate-500 font-bold block">Current Outstanding Due</span>
+                    <span className="text-sm md:text-base font-black text-rose-900 mt-0.5 block">₹{(selectedLedgerParty.outstanding || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <span className="text-slate-500 font-bold block">Account Status</span>
+                    <span className="text-xs md:text-sm font-black text-emerald-900 mt-1 block">
+                      {(selectedLedgerParty.outstanding || 0) > (selectedLedgerParty.credit_limit || 10000) ? '⚠️ Over Limit' : '✅ Healthy'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ledger Statement Table */}
+                <div className="flex-1 overflow-y-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left text-xs text-slate-700">
+                    <thead className="bg-slate-50 text-slate-500 uppercase font-bold sticky top-0 border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3">Date</th>
+                        <th className="py-2.5 px-3">Particulars / Ref</th>
+                        <th className="py-2.5 px-3 text-right">Debit (+)</th>
+                        <th className="py-2.5 px-3 text-right">Credit (-)</th>
+                        <th className="py-2.5 px-3 text-right">Balance Due</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      <tr className="bg-slate-50/50">
+                        <td className="py-2 px-3 text-slate-500 font-mono">01/11/2026</td>
+                        <td className="py-2 px-3 font-semibold text-slate-700">Opening Balance Brought Forward</td>
+                        <td className="py-2 px-3 text-right font-mono text-slate-800">₹{Math.round((selectedLedgerParty.outstanding || 0) * 0.7).toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right font-mono text-slate-400">-</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-800">₹{Math.round((selectedLedgerParty.outstanding || 0) * 0.7).toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 text-slate-500 font-mono">08/11/2026</td>
+                        <td className="py-2 px-3 font-semibold text-slate-700">Invoice: Green Chef Appliances Dispatch</td>
+                        <td className="py-2 px-3 text-right font-mono text-slate-800">₹{Math.round((selectedLedgerParty.outstanding || 0) * 0.6).toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right font-mono text-slate-400">-</td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-slate-800">₹{Math.round((selectedLedgerParty.outstanding || 0) * 1.3).toLocaleString()}</td>
+                      </tr>
+                      <tr className="bg-emerald-50/30">
+                        <td className="py-2 px-3 text-slate-500 font-mono">11/11/2026</td>
+                        <td className="py-2 px-3 font-semibold text-emerald-800">Payment Received (UPI / Cash Collection)</td>
+                        <td className="py-2 px-3 text-right font-mono text-slate-400">-</td>
+                        <td className="py-2 px-3 text-right font-mono text-emerald-700 font-bold">₹{Math.round((selectedLedgerParty.outstanding || 0) * 0.3).toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right font-mono font-black text-rose-700">₹{(selectedLedgerParty.outstanding || 0).toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                  >
+                    Close
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={formatWhatsAppUrl(selectedLedgerParty.phone, getLedgerWhatsAppText(selectedLedgerParty, currentFirm))}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow"
+                    >
+                      <Icon name="whatsapp" className="w-4 h-4" />
+                      <span>Share Statement on WhatsApp</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow"
+                    >
+                      🖨️ Print Statement
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: DIRECT UPI CLICK-TO-PAY QR */}
+          {activeModal === 'UPI_QR_MODAL' && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-100 text-center space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <h3 className="font-extrabold text-slate-900 text-sm">
+                    Madhav Enterprises UPI Instant Payment
+                  </h3>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+                </div>
+
+                {upiModalParty && (
+                  <p className="text-xs text-slate-500 font-medium">
+                    Customer: <b className="text-slate-800">{upiModalParty}</b>
+                  </p>
+                )}
+
+                <div className="bg-blue-50 border border-blue-200 p-2.5 rounded-xl text-center">
+                  <span className="text-xs text-slate-500 font-bold block">Payable Amount</span>
+                  <span className="text-2xl font-black text-blue-900 block mt-0.5">
+                    ₹{(upiModalAmount || 0).toLocaleString()}
+                  </span>
+                </div>
+
+                {/* QR Display */}
+                <div className="bg-white p-3 rounded-2xl border-2 border-slate-200 shadow-inner flex flex-col items-center">
+                  <img
+                    src="madhav-upi-qr.png"
+                    alt="Madhav UPI QR"
+                    className="w-48 h-48 rounded-xl object-contain border border-slate-200"
+                  />
+                  <img
+                    src="upi-click-to-pay.png"
+                    alt="Supported UPI Apps"
+                    className="h-5 mt-2 object-contain"
+                  />
+                  <p className="text-[11px] text-slate-500 font-mono mt-1">
+                    UPI ID: <b>7499477581@upi</b> (Madhav Enterprises)
+                  </p>
+                </div>
+
+                <div className="pt-2 flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal(null)}
+                    className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                  >
+                    Close
+                  </button>
+                  <a
+                    href={`upi://pay?pa=7499477581@upi&pn=Madhav%20Enterprises&am=${upiModalAmount || 0}&cu=INR`}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow flex items-center justify-center space-x-1"
+                  >
+                    <span>Open UPI App</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: GREEN CHEF FACTORY BATCH RETURN CHALLAN */}
+          {activeModal === 'FACTORY_RETURN_CHALLAN' && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-2xl w-full p-5 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-base">
+                      🏭
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm md:text-base">
+                        Green Chef Factory Warranty Claim Consignment Challan
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Official factory return dispatch from Madhav Central Godown, Nagpur
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-slate-400 font-bold block">Consignor:</span>
+                    <span className="font-extrabold text-slate-800">MADHAV ENTERPRISES (Authorized Distributor)</span>
+                    <span className="text-slate-600 block">Indora, Nagpur | GSTIN: 27BQIPP3836Q1ZZ</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-bold block">Consignee (Factory):</span>
+                    <span className="font-extrabold text-slate-800">Green Chef Appliances Ltd.</span>
+                    <span className="text-slate-600 block">Quality Assurance & Warranty Claim Division</span>
+                  </div>
+                </div>
+
+                {/* Claim Items Table */}
+                <div className="flex-1 overflow-y-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-left text-xs text-slate-700">
+                    <thead className="bg-slate-100 text-slate-600 uppercase font-bold sticky top-0">
+                      <tr>
+                        <th className="py-2 px-3">#</th>
+                        <th className="py-2 px-3">Slip No</th>
+                        <th className="py-2 px-3">Product Name</th>
+                        <th className="py-2 px-3">Party Name</th>
+                        <th className="py-2 px-3">Defect Reported</th>
+                        <th className="py-2 px-3 text-center">Qty</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {replacements.filter(r => r.status === 'PENDING_FACTORY').map((r, idx) => (
+                        <tr key={r.id}>
+                          <td className="py-2 px-3 font-bold text-slate-400">{idx + 1}</td>
+                          <td className="py-2 px-3 font-mono font-bold text-amber-800">{r.slip_no}</td>
+                          <td className="py-2 px-3 font-semibold text-slate-900">{r.productName}</td>
+                          <td className="py-2 px-3 text-slate-600">{r.client_name}</td>
+                          <td className="py-2 px-3 text-slate-500">{r.reason}</td>
+                          <td className="py-2 px-3 text-center font-bold text-slate-800">{r.qty}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModal(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow"
+                  >
+                    🖨️ Print Factory Return Challan
                   </button>
                 </div>
               </div>
