@@ -13450,7 +13450,20 @@ Thank you for your valuable cooperation! 🙏
                       {/* 4. Sales Return (Unsold stock / Credit note) */}
                       <button
                         type="button"
-                        onClick={() => setActiveModal('SALES_RETURN_MODAL')}
+                        onClick={() => {
+                          setSalesReturnData({
+                            partyId: selectedClient ? selectedClient.id : '',
+                            invoiceNo: '',
+                            productId: '',
+                            productName: '',
+                            qty: 1,
+                            returnRate: '',
+                            condition: 'RESELLABLE',
+                            reason: 'Unsold Fresh Stock (Resellable)',
+                            remark: ''
+                          });
+                          setActiveModal('SALES_RETURN');
+                        }}
                         className="p-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 text-left transition-all shadow-2xs"
                       >
                         <div className="text-xl mb-1">📦</div>
@@ -17286,7 +17299,7 @@ Thank you for your valuable cooperation! 🙏
           )}
 
           {/* MODAL: SALES RETURN */}
-          {activeModal === 'SALES_RETURN' && (
+          {(activeModal === 'SALES_RETURN' || activeModal === 'SALES_RETURN_MODAL') && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -17304,13 +17317,41 @@ Thank you for your valuable cooperation! 🙏
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="font-bold text-slate-700">Customer Name</label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={selectedClient ? selectedClient.company_name : ''}
-                      className="w-full mt-1 bg-slate-100 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-800"
-                    />
+                    <label className="font-bold text-slate-700">Customer / Retailer Name *</label>
+                    {selectedClient ? (
+                      <div className="flex items-center justify-between mt-1 bg-slate-100 border border-slate-200 rounded-xl p-2.5">
+                        <div>
+                          <span className="font-bold text-slate-800">{selectedClient.company_name}</span>
+                          <span className="text-[11px] text-slate-500 block">Due: ₹{(selectedClient.outstanding || 0).toLocaleString()}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedClient(null)}
+                          className="text-xs text-blue-600 font-bold hover:underline"
+                        >
+                          Change Party
+                        </button>
+                      </div>
+                    ) : (
+                      <select
+                        value={salesReturnData.partyId || ''}
+                        onChange={(e) => {
+                          const client = allCombinedClients.find(c => c.id === e.target.value);
+                          if (client) {
+                            setSelectedClient(client);
+                            setSalesReturnData(prev => ({ ...prev, partyId: client.id }));
+                          }
+                        }}
+                        className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-bold text-slate-800"
+                      >
+                        <option value="">Select Customer / Party Account...</option>
+                        {allCombinedClients.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.company_name} ({c.city || 'Nagpur'}) - Outstanding: ₹{(c.outstanding || 0).toLocaleString()}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div>
@@ -17438,6 +17479,15 @@ Thank you for your valuable cooperation! 🙏
                   <button
                     type="button"
                     onClick={() => {
+                      if (!selectedClient && !salesReturnData.partyId) {
+                        alert("⚠️ कृपया आधी पार्टी (ग्राहक) निवडा!\n(Please select a customer / party account first)");
+                        return;
+                      }
+                      if (!salesReturnData.productId) {
+                        alert("⚠️ कृपया परत आलेला प्रॉडक्ट निवडा!\n(Please select a returned product)");
+                        return;
+                      }
+
                       const qty = Number(salesReturnData.qty) || 1;
                       const rate = Number(salesReturnData.returnRate) || 0;
                       const creditAmount = qty * rate;
@@ -17453,14 +17503,16 @@ Thank you for your valuable cooperation! 🙏
                       }
 
                       // Deduct credit amount from customer outstanding balance
-                      if (creditAmount > 0) {
-                        if (selectedClient) selectedClient.outstanding = Math.max(0, (selectedClient.outstanding || 0) - creditAmount);
+                      const targetClient = selectedClient || allCombinedClients.find(c => c.id === salesReturnData.partyId);
+                      if (creditAmount > 0 && targetClient) {
+                        targetClient.outstanding = Math.max(0, (targetClient.outstanding || 0) - creditAmount);
                       }
 
+                      const partyTitle = targetClient ? targetClient.company_name : 'Customer';
                       setActiveModal(null);
-                      alert(`✅ Credit note generated!\n₹${creditAmount.toLocaleString()} credited to ${selectedClient ? selectedClient.company_name : 'Customer'}\'s account and stock restored to godown.`);
+                      alert(`✅ Sales Return & Credit Note Generated!\n• ₹${creditAmount.toLocaleString()} credited to ${partyTitle}'s account.\n• ${qty} units inwarded to ${salesReturnData.condition === 'RESELLABLE' ? 'resellable godown stock' : 'quarantine section'}.`);
                     }}
-                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow"
+                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow transition-all"
                   >
                     Issue Credit Voucher & Deduct Outstanding Due
                   </button>
