@@ -12055,7 +12055,7 @@ const MASTER_DAILY_COLLECTIONS = [
 
       const [clientSearch, setClientSearch] = useState("");
       const [isSelectingParty, setIsSelectingParty] = useState(false);
-      const [selectedClient, setSelectedClient] = useState(currentClientList[0] || MASTER_GST_CLIENTS[0]);
+      const [selectedClient, setSelectedClient] = useState(null);
 
       // Party Directory Modal State (Clicking Parties 558 / 62 opens this)
       const [partyDirectoryFirmFilter, setPartyDirectoryFirmFilter] = useState("ALL"); // 'ALL', 'MADHAV', 'SHIVOM'
@@ -12185,8 +12185,7 @@ const MASTER_DAILY_COLLECTIONS = [
       // Whenever firm switches, reset selected client and series
       const switchFirm = (key) => {
         setCurrentFirmKey(key);
-        const list = key === "MADHAV" ? gstClients : nonGstDealers;
-        setSelectedClient(list[0]);
+        setSelectedClient(null);
         setClientSearch("");
         // Shivom is STRICTLY Non-GST only. Madhav defaults to GST_INVOICE but allows both.
         setInvoiceSeries(key === "SHIVOM" ? "NON_GST_ESTIMATE" : "GST_INVOICE");
@@ -12467,10 +12466,11 @@ const MASTER_DAILY_COLLECTIONS = [
       };
 
       const clientDistance = useMemo(() => {
+        if (!selectedClient || selectedClient.lat === undefined) return null;
         return calculateDistance(currentRepLat, currentRepLng, selectedClient.lat, selectedClient.lng);
       }, [currentRepLat, currentRepLng, selectedClient]);
 
-      const isWithin100m = clientDistance <= 100;
+      const isWithin100m = clientDistance !== null && clientDistance <= 100;
 
       const togglePunch = () => {
         if (!isPunchedIn) {
@@ -12603,18 +12603,21 @@ const MASTER_DAILY_COLLECTIONS = [
           if (invoiceSeries === "GST_INVOICE" && currentFirm.isGst) {
             const taxRate = item.tax_rate || 18;
             const taxAmt = (itemTaxable * taxRate) / 100;
-            if (selectedClient.state_code === currentFirm.state_code) {
+            if (selectedClient && selectedClient.state_code === currentFirm.state_code) {
               cgst += taxAmt / 2;
               sgst += taxAmt / 2;
-            } else {
+            } else if (selectedClient) {
               igst += taxAmt;
+            } else {
+              cgst += taxAmt / 2;
+              sgst += taxAmt / 2;
             }
           }
         });
 
         const totalTax = cgst + sgst + igst;
         const currentOrderTotal = subtotal + totalTax;
-        const previousOutstanding = selectedClient.outstanding || 0;
+        const previousOutstanding = selectedClient ? (selectedClient.outstanding || 0) : 0;
         const paidToday = Number(paidTodayInput) || 0;
         const netBalanceDue = Math.max(0, currentOrderTotal + previousOutstanding - paidToday);
 
@@ -12633,6 +12636,10 @@ const MASTER_DAILY_COLLECTIONS = [
 
       // Order Booking Handler
       const handleCreateOrder = () => {
+        if (!selectedClient) {
+          alert("⚠️ कृपया ऑर्डर बुक करण्यासाठी आधी पार्टी (ग्राहक) निवडा!\n(Please select a customer / party account first)");
+          return;
+        }
         if (!isPunchedIn) {
           alert(`Please complete GPS attendance punch-in for ${activeSalesman.name} before booking an order!`);
           return;
@@ -12642,7 +12649,7 @@ const MASTER_DAILY_COLLECTIONS = [
           return;
         }
 
-        if (billSummary.netBalanceDue > selectedClient.credit_limit) {
+        if (billSummary.netBalanceDue > (selectedClient.credit_limit || 10000)) {
           const excess = billSummary.netBalanceDue - selectedClient.credit_limit;
           const proceed = confirm(`⚠️ Credit Limit Exceeded!
 Net Balance Due: ₹${billSummary.netBalanceDue.toLocaleString()} (Exceeds Credit Limit ₹${selectedClient.credit_limit.toLocaleString()} by ₹${excess.toLocaleString()}).
@@ -12773,6 +12780,10 @@ Thank you! 🙏 *${firmInfo.name}, Indora, Nagpur*`;
             // Handle unified 3-mode replacement submission
       const handleProcessReplacement = (e) => {
         if (e) e.preventDefault();
+        if (!selectedClient) {
+          alert("⚠️ Please select a customer first before processing replacement!");
+          return;
+        }
         const qty = Number(replacementForm.qty) || 1;
         const matchedProd = products.find(p => p.id === replacementForm.productId);
         const prodName = matchedProd ? matchedProd.name : (replacementForm.productName || 'Cookware Item');
@@ -13896,7 +13907,7 @@ Thank you for your valuable cooperation! 🙏
                               setIsSelectingParty(false);
                             }}
                             className={`p-3 cursor-pointer transition-all hover:bg-blue-50/80 flex items-center justify-between ${
-                              selectedClient.id === c.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                              (selectedClient && selectedClient.id === c.id) ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                             }`}
                           >
                             <div className="min-w-0 pr-2">
@@ -13925,82 +13936,120 @@ Thank you for your valuable cooperation! 🙏
                 </div>
 
                 {/* Selected Party Summary Card */}
-                <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/40 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-extrabold text-sm text-slate-900">{selectedClient.company_name}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-900">
-                          {selectedClient.type || (currentFirmKey === 'MADHAV' ? 'B2B Wholesale Account' : 'Retail Dealer')}
+                {selectedClient ? (
+                  <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/40 space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-extrabold text-sm text-slate-900">{selectedClient.company_name}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-900">
+                            {selectedClient.type || (currentFirmKey === 'MADHAV' ? 'B2B Wholesale Account' : 'Retail Dealer')}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-600 mt-0.5">
+                          📍 {selectedClient.address || selectedClient.area || 'Nagpur'} {selectedClient.phone ? `| 📞 ${selectedClient.phone}` : ''}
+                        </div>
+                        {selectedClient.gstin && (
+                          <div className="text-xs font-mono font-bold text-blue-800">
+                            GSTIN: {selectedClient.gstin}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedClient(null); setIsSelectingParty(true); setClientSearch(""); }}
+                        className="px-2.5 py-1.5 rounded-lg bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 font-bold text-[11px] shadow-sm whitespace-nowrap"
+                        title="Remove party and select another"
+                      >
+                        🔄 Change Customer
+                      </button>
+                    </div>
+
+                    {/* Geofence Status Badge */}
+                    <div className={`p-2 rounded-lg text-xs font-medium flex items-center justify-between ${
+                      isWithin100m ? 'bg-emerald-100/70 text-emerald-900' : 'bg-amber-100/70 text-amber-900'
+                    }`}>
+                      <div className="flex items-center space-x-1.5">
+                        <Icon name={isWithin100m ? 'shield-check' : 'alert'} className="w-4 h-4" />
+                        <span>
+                          {isWithin100m
+                            ? `100m Field Visit Verified: Distance ${clientDistance}m (Shop Visit)`
+                            : `Distance: ${clientDistance}m (Over 100m - Phone / Remote Order)`}
                         </span>
                       </div>
-                      <div className="text-xs text-slate-600 mt-0.5">
-                        📍 {selectedClient.address || selectedClient.area || 'Nagpur'} {selectedClient.phone ? `| 📞 ${selectedClient.phone}` : ''}
-                      </div>
-                      {selectedClient.gstin && (
-                        <div className="text-xs font-mono font-bold text-blue-800">
-                          GSTIN: {selectedClient.gstin}
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => { setIsSelectingParty(true); setClientSearch(""); }}
-                      className="px-2.5 py-1.5 rounded-lg bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 font-bold text-[11px] shadow-sm whitespace-nowrap"
-                    >
-                      🔄 Change Customer
-                    </button>
-                  </div>
-
-                  {/* Geofence Status Badge */}
-                  <div className={`p-2 rounded-lg text-xs font-medium flex items-center justify-between ${
-                    isWithin100m ? 'bg-emerald-100/70 text-emerald-900' : 'bg-amber-100/70 text-amber-900'
-                  }`}>
-                    <div className="flex items-center space-x-1.5">
-                      <Icon name={isWithin100m ? 'shield-check' : 'alert'} className="w-4 h-4" />
-                      <span>
-                        {isWithin100m
-                          ? `100m Field Visit Verified: Distance ${clientDistance}m (Shop Visit)`
-                          : `Distance: ${clientDistance}m (Over 100m - Phone / Remote Order)`}
+                      <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-white shadow-xs">
+                        {isWithin100m ? 'Field Visit' : 'Phone Order'}
                       </span>
                     </div>
-                    <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-white shadow-xs">
-                      {isWithin100m ? 'Field Visit' : 'Phone Order'}
-                    </span>
-                  </div>
 
-                  {/* Ledger Balance & Credit Limit */}
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
-                    <div className="flex justify-between text-slate-600">
-                      <div className="flex items-center space-x-2">
-                        <span>Credit Limit: <b>₹{(selectedClient.credit_limit || 10000).toLocaleString()}</b></span>
-                        <button
-                          onClick={() => {
-                            setEditLimitParty(selectedClient);
-                            setCustomLimitInput(selectedClient.credit_limit || 10000);
-                            setCustomDaysInput(selectedClient.credit_days || 15);
-                            setActiveModal('EDIT_CREDIT_LIMIT');
-                          }}
-                          className="px-2 py-0.5 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[10px] border border-blue-300 shadow-xs"
-                          title="Modify Credit Limit"
-                        >
-                          ✏️ Edit Limit
-                        </button>
+                    {/* Ledger Balance & Credit Limit */}
+                    <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
+                      <div className="flex justify-between text-slate-600">
+                        <div className="flex items-center space-x-2">
+                          <span>Credit Limit: <b>₹{(selectedClient.credit_limit || 10000).toLocaleString()}</b></span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditLimitParty(selectedClient);
+                              setCustomLimitInput(selectedClient.credit_limit || 10000);
+                              setCustomDaysInput(selectedClient.credit_days || 15);
+                              setActiveModal('EDIT_CREDIT_LIMIT');
+                            }}
+                            className="px-2 py-0.5 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[10px] border border-blue-300 shadow-xs"
+                            title="Modify Credit Limit"
+                          >
+                            ✏️ Edit Limit
+                          </button>
+                        </div>
+                        <span>Payment Terms: <b>{selectedClient.credit_days || 15} Days</b></span>
                       </div>
-                      <span>Payment Terms: <b>{selectedClient.credit_days || 15} Days</b></span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${selectedClient.outstanding / (selectedClient.credit_limit || 10000) > 0.8 ? 'bg-rose-500' : 'bg-blue-600'}`}
-                        style={{ width: `${Math.min(100, ((selectedClient.outstanding || 0) / (selectedClient.credit_limit || 10000)) * 100)}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="font-bold text-rose-700">Previous Due: ₹{(selectedClient.outstanding || 0).toLocaleString()}</span>
-                      <span className="font-medium text-emerald-700">Available Credit: ₹{Math.max(0, (selectedClient.credit_limit || 10000) - (selectedClient.outstanding || 0)).toLocaleString()}</span>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${selectedClient.outstanding / (selectedClient.credit_limit || 10000) > 0.8 ? 'bg-rose-500' : 'bg-blue-600'}`}
+                          style={{ width: `${Math.min(100, ((selectedClient.outstanding || 0) / (selectedClient.credit_limit || 10000)) * 100)}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="font-bold text-rose-700">Previous Due: ₹{(selectedClient.outstanding || 0).toLocaleString()}</span>
+                        <span className="font-medium text-emerald-700">Available Credit: ₹{Math.max(0, (selectedClient.credit_limit || 10000) - (selectedClient.outstanding || 0)).toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    onClick={() => setIsSelectingParty(true)}
+                    className="p-5 rounded-xl border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/40 hover:bg-blue-50/70 text-center cursor-pointer transition-all space-y-1.5"
+                  >
+                    <div className="text-3xl">🏪</div>
+                    <div className="font-extrabold text-xs text-slate-800">कोणतीही पार्टी निवडलेली नाही (No Party Selected)</div>
+                    <p className="text-[11px] text-slate-500">
+                      ऑर्डर बुक करण्यासाठी वरील सर्च बॉक्समध्ये दुकानाचे नाव शोधा किंवा <span className="text-blue-600 font-bold underline">Directory</span> मधून पार्टी निवडा.
+                    </p>
+                    <div className="pt-1 flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsSelectingParty(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs"
+                      >
+                        🔍 Search Party
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveModal('PARTY_DIRECTORY');
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs shadow-xs"
+                      >
+                        📁 Open Directory ({currentClientList.length})
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Dual-Series Billing Engine Switch */}
@@ -14473,7 +14522,7 @@ Thank you for your valuable cooperation! 🙏
                     </div>
                   </div>
 
-                  {billSummary.netBalanceDue > (selectedClient.credit_limit || 10000) && (
+                  {selectedClient && billSummary.netBalanceDue > (selectedClient.credit_limit || 10000) && (
                     <div className="mt-2 p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between">
                       <div className="flex items-center space-x-1.5 font-bold">
                         <Icon name="alert" className="w-4 h-4 text-rose-400" />
@@ -17057,7 +17106,7 @@ Thank you for your valuable cooperation! 🙏
                     </div>
                     <div>
                       <h3 className="font-extrabold text-slate-900 text-sm">Product Replacement & Warranty Workflow</h3>
-                      <p className="text-xs text-slate-500">Customer: <b className="text-slate-800">{selectedClient.company_name}</b></p>
+                      <p className="text-xs text-slate-500">Customer: <b className="text-slate-800">{selectedClient ? selectedClient.company_name : 'Walk-in Retailer'}</b></p>
                     </div>
                   </div>
                   <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
@@ -17323,7 +17372,7 @@ Thank you for your valuable cooperation! 🙏
                     <input
                       type="text"
                       readOnly
-                      value={selectedClient.company_name}
+                      value={selectedClient ? selectedClient.company_name : ''}
                       className="w-full mt-1 bg-slate-100 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-800"
                     />
                   </div>
@@ -17469,11 +17518,11 @@ Thank you for your valuable cooperation! 🙏
 
                       // Deduct credit amount from customer outstanding balance
                       if (creditAmount > 0) {
-                        selectedClient.outstanding = Math.max(0, (selectedClient.outstanding || 0) - creditAmount);
+                        if (selectedClient) selectedClient.outstanding = Math.max(0, (selectedClient.outstanding || 0) - creditAmount);
                       }
 
                       setActiveModal(null);
-                      alert(`✅ Credit note generated!\n₹${creditAmount.toLocaleString()} credited to ${selectedClient.company_name}\'s account and stock restored to godown.`);
+                      alert(`✅ Credit note generated!\n₹${creditAmount.toLocaleString()} credited to ${selectedClient ? selectedClient.company_name : 'Customer'}\'s account and stock restored to godown.`);
                     }}
                     className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow"
                   >
