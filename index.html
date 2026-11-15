@@ -11957,9 +11957,21 @@ const MASTER_DAILY_COLLECTIONS = [
         try {
           localStorage.setItem('madhav_auth_user', newId);
         } catch (e) {}
-        // All team members have full equal administrative capabilities
-        setRole('ADMIN');
+        if (newId === 'gopal' || newId === 'vikram') {
+          setRole('SALES_REP');
+        } else {
+          setRole('ADMIN');
+        }
       };
+
+      // Strict Role Enforcement: Gopal and Viki only see Field Sales (Admin Dashboard hidden)
+      useEffect(() => {
+        if (currentUser.id === 'gopal' || currentUser.id === 'vikram') {
+          if (role !== 'SALES_REP') {
+            setRole('SALES_REP');
+          }
+        }
+      }, [currentUser.id, role]);
 
       // Real-Time Firestore Cloud Sync Helper (Graceful offline fallback)
       const syncWithFirestore = (collectionName, docId, docData) => {
@@ -13201,27 +13213,33 @@ Thank you for your valuable cooperation! 🙏
                 </button>
               </div>
 
-              {/* View Mode Switcher - Open & 1-Click Accessible to All 5 Team Members */}
-              <div className="bg-slate-800 p-1 rounded-xl flex items-center border border-slate-700">
-                <button
-                  onClick={() => setRole("ADMIN")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                    role === 'ADMIN' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Switch to Admin Dashboard"
-                >
-                  <span>🏢 Admin Dashboard</span>
-                </button>
-                <button
-                  onClick={() => setRole("SALES_REP")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
-                    role === 'SALES_REP' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Switch to Field Sales"
-                >
-                  <span>📱 Field Sales</span>
-                </button>
-              </div>
+              {/* View Mode Switcher - Exclusive to Shyam, Roshan & Prashik (Owners & Manager) */}
+              {['shyam', 'roshan', 'prashik'].includes(currentUser.id) ? (
+                <div className="bg-slate-800 p-1 rounded-xl flex items-center border border-slate-700">
+                  <button
+                    onClick={() => setRole("ADMIN")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                      role === 'ADMIN' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Switch to Admin Dashboard"
+                  >
+                    <span>🏢 Admin Dashboard</span>
+                  </button>
+                  <button
+                    onClick={() => setRole("SALES_REP")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                      role === 'SALES_REP' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Switch to Field Sales"
+                  >
+                    <span>📱 Field Sales</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="px-3 py-1.5 bg-blue-950/70 border border-blue-500/40 rounded-xl text-blue-200 text-xs font-extrabold flex items-center gap-1.5 shadow-xs">
+                  <span>📱 Field Sales Portal</span>
+                </div>
+              )}
             </div>
           </header>
 
