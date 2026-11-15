@@ -13228,69 +13228,9 @@ Thank you for your valuable cooperation! 🙏
           {/* VIEW 1: FIELD SALES EXECUTIVE */}
           {role === 'SALES_REP' && (
             <main className="p-4 space-y-4 max-w-2xl mx-auto">
-              {/* FIELD SALES EXECUTIVE SUBTABS NAVIGATION */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFieldSalesTab('DASHBOARD')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
-                    fieldSalesTab === 'DASHBOARD'
-                      ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                  }`}
-                >
-                  <span>📊 Dashboard</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setFieldSalesTab('NEW_ORDER')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
-                    fieldSalesTab === 'NEW_ORDER'
-                      ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-500/20'
-                      : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
-                  }`}
-                >
-                  <Icon name="plus" className="w-3.5 h-3.5" />
-                  <span>📝 New Order</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setFieldSalesTab('MY_ORDERS')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
-                    fieldSalesTab === 'MY_ORDERS'
-                      ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                  }`}
-                >
-                  <span>📋 My Orders</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-white font-black">
-                    {myOrders.length}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setFieldSalesTab('COLLECTIONS')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
-                    fieldSalesTab === 'COLLECTIONS'
-                      ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                  }`}
-                  title="Daily Cash in Hand & Beat Overdue Collections"
-                >
-                  <span>💰 Cash & Collections</span>
-                </button>
-              </div>
-
-              {/* ============================================================== */}
-              {/* SUBTAB 1: FIELD SALES EXECUTIVE DASHBOARD (HOME)                */}
-              {/* ============================================================== */}
+              {/* Top Hero Welcome & Action Banner (Rendered first on Dashboard as requested) */}
               {fieldSalesTab === 'DASHBOARD' && (
-                <div className="space-y-4">
-                  {/* Merged Executive Field Sales Hero & Operations Card */}
-                  <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden space-y-3">
+                <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden space-y-3">
                     {/* Top Row: Beat badge, GPS Attendance, Punch Out, Cash */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/10 text-xs">
                       <div className="flex flex-wrap items-center gap-2">
@@ -13390,14 +13330,102 @@ Thank you for your valuable cooperation! 🙏
                       </div>
                     )}
                   </div>
+              )}
 
-                  {/* Quick Action On-Field Tools (Non-duplicate, essential tools) */}
+              {/* FIELD SALES EXECUTIVE SUBTABS NAVIGATION */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFieldSalesTab('DASHBOARD')}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
+                    fieldSalesTab === 'DASHBOARD'
+                      ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <span>📊 Dashboard</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFieldSalesTab('NEW_ORDER')}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
+                    fieldSalesTab === 'NEW_ORDER'
+                      ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-500/20'
+                      : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
+                  }`}
+                >
+                  <Icon name="plus" className="w-3.5 h-3.5" />
+                  <span>📝 New Order</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFieldSalesTab('MY_ORDERS')}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
+                    fieldSalesTab === 'MY_ORDERS'
+                      ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <span>📋 My Orders</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-white font-black">
+                    {myOrders.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFieldSalesTab('COLLECTIONS')}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
+                    fieldSalesTab === 'COLLECTIONS'
+                      ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Daily Cash in Hand & Beat Overdue Collections"
+                >
+                  <span>💰 Cash & Collections</span>
+                </button>
+              </div>
+
+              {/* ============================================================== */}
+              {/* SUBTAB 1: FIELD SALES EXECUTIVE DASHBOARD (HOME)                */}
+              {/* ============================================================== */}
+              {fieldSalesTab === 'DASHBOARD' && (
+                <div className="space-y-4">
+                  {/* Quick Action On-Field Tools (Reordered: Party Directory, Instant UPI QR, Replacement, Sales Return) */}
                   <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Quick On-Field Tools</div>
                       <span className="text-[11px] text-slate-400 font-medium">1-Tap Direct Operations</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {/* 1. Party Directory (Most frequently used) */}
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal('PARTY_DIRECTORY')}
+                        className="p-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-left transition-all shadow-2xs"
+                      >
+                        <div className="text-xl mb-1">📁</div>
+                        <div className="font-bold text-xs">Party Directory</div>
+                        <div className="text-[10px] text-blue-700">{allCombinedClients.length} accounts & phones</div>
+                      </button>
+
+                      {/* 2. Instant UPI QR (Frequent field collection) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUpiModalParty(selectedClient ? selectedClient.company_name : 'Beat Retailer');
+                          setActiveModal('UPI_QR_MODAL');
+                        }}
+                        className="p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-left transition-all shadow-2xs"
+                      >
+                        <div className="text-xl mb-1">📱</div>
+                        <div className="font-bold text-xs">Instant UPI QR</div>
+                        <div className="text-[10px] text-emerald-700">Show QR for payment</div>
+                      </button>
+
+                      {/* 3. Product Replacement (Warranty claim / 1-to-1) */}
                       <button
                         type="button"
                         onClick={() => {
@@ -13419,16 +13447,7 @@ Thank you for your valuable cooperation! 🙏
                         <div className="text-[10px] text-amber-700">Warranty claim / 1-to-1</div>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setActiveModal('PARTY_DIRECTORY')}
-                        className="p-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-left transition-all shadow-2xs"
-                      >
-                        <div className="text-xl mb-1">📁</div>
-                        <div className="font-bold text-xs">Party Directory</div>
-                        <div className="text-[10px] text-blue-700">{allCombinedClients.length} accounts & phones</div>
-                      </button>
-
+                      {/* 4. Sales Return (Unsold stock / Credit note) */}
                       <button
                         type="button"
                         onClick={() => setActiveModal('SALES_RETURN_MODAL')}
@@ -13437,19 +13456,6 @@ Thank you for your valuable cooperation! 🙏
                         <div className="text-xl mb-1">📦</div>
                         <div className="font-bold text-xs">Sales Return</div>
                         <div className="text-[10px] text-rose-700">Unsold stock / Credit note</div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUpiModalParty(selectedClient ? selectedClient.company_name : 'Beat Retailer');
-                          setActiveModal('UPI_QR_MODAL');
-                        }}
-                        className="p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-left transition-all shadow-2xs"
-                      >
-                        <div className="text-xl mb-1">📱</div>
-                        <div className="font-bold text-xs">Instant UPI QR</div>
-                        <div className="text-[10px] text-emerald-700">Show QR for payment</div>
                       </button>
                     </div>
                   </div>
