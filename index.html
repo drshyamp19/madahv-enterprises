@@ -13222,39 +13222,39 @@ Thank you for your valuable cooperation! 🙏
           {role === 'SALES_REP' && (
             <main className="p-4 space-y-4 max-w-2xl mx-auto">
               {/* FIELD SALES EXECUTIVE SUBTABS NAVIGATION */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   type="button"
                   onClick={() => setFieldSalesTab('DASHBOARD')}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
                     fieldSalesTab === 'DASHBOARD'
                       ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
-                  <span>📊 Executive Dashboard</span>
+                  <span>📊 Dashboard</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setFieldSalesTab('NEW_ORDER')}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
                     fieldSalesTab === 'NEW_ORDER'
                       ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-500/20'
-                      : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200 shadow-xs'
+                      : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
                   }`}
                 >
                   <Icon name="plus" className="w-3.5 h-3.5" />
-                  <span>📝 + New Order Booking</span>
+                  <span>📝 New Order</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setFieldSalesTab('MY_ORDERS')}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
                     fieldSalesTab === 'MY_ORDERS'
                       ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
                   <span>📋 My Orders</span>
@@ -13266,13 +13266,14 @@ Thank you for your valuable cooperation! 🙏
                 <button
                   type="button"
                   onClick={() => setFieldSalesTab('COLLECTIONS')}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center space-x-1.5 ${
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 text-center shadow-xs ${
                     fieldSalesTab === 'COLLECTIONS'
                       ? 'bg-slate-900 text-white shadow-md ring-2 ring-slate-900/20'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                   }`}
+                  title="Daily Cash in Hand & Beat Overdue Collections"
                 >
-                  <span>💰 Daily Cash & Collections</span>
+                  <span>💰 Cash & Collections</span>
                 </button>
               </div>
 
