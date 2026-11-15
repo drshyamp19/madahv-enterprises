@@ -1,9 +1,14 @@
 // Service Worker for Madhav Enterprises PWA (Offline-First)
-const CACHE_NAME = 'madhav-sales-v1';
+const CACHE_NAME = 'madhav-sales-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/favicon.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
+  '/madhav-logo.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -48,9 +53,10 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           })
           .catch(() => {
-            // Offline fallback
+            // Fallback to cached response when offline
             return cachedResponse;
           });
+
         return cachedResponse || fetchPromise;
       })
     );

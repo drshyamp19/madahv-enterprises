@@ -1,24 +1,11 @@
 {
   "version": 2,
-  "name": "madhav-enterprises-pwa",
-  "builds": [
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    }
-  ],
+  "cleanUrls": true,
   "routes": [
     {
-      "src": "/manifest.json",
+      "src": "/(favicon\\.png|apple-touch-icon\\.png|icon-[0-9]+\\.png|madhav-[a-z0-9-]+\\.png|manifest\\.json|sw\\.js)",
       "headers": {
-        "Content-Type": "application/manifest+json"
-      }
-    },
-    {
-      "src": "/sw.js",
-      "headers": {
-        "Service-Worker-Allowed": "/",
-        "Cache-Control": "no-cache"
+        "Cache-Control": "public, max-age=86400"
       }
     },
     {
