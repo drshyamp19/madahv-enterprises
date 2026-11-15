@@ -13221,107 +13221,6 @@ Thank you for your valuable cooperation! 🙏
           {/* VIEW 1: FIELD SALES EXECUTIVE */}
           {role === 'SALES_REP' && (
             <main className="p-4 space-y-4 max-w-2xl mx-auto">
-              {/* Active Sales Rep Profile & GPS Card */}
-              <div className={`rounded-2xl p-4 shadow-sm border ${
-                currentFirmKey === 'MADHAV' ? 'bg-white border-blue-200' : 'bg-white border-emerald-200'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      {currentFirmKey === 'MADHAV' ? 'Madhav Authorized Sales Representative' : 'Shivom Non-GST Sales Representative'}
-                    </span>
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <span>{currentUser.avatar} {currentUser.name}</span>
-                      <span className="text-xs font-normal text-slate-500 font-mono">({currentUser.phone})</span>
-                    </h2>
-                    <p className="text-xs text-slate-500 flex items-center space-x-1 mt-0.5">
-                      <Icon name="map-pin" className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Beat: {activeSalesman.assigned_beat}</span>
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRole('ADMIN');
-                        setActiveAdminTab('DISPATCH');
-                      }}
-                      className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 flex items-center space-x-1.5 shadow-sm transition-all whitespace-nowrap"
-                    >
-                      <span>🚚 Orders ({ordersHistory.length})</span>
-                    </button>
-                    <button
-                      onClick={togglePunch}
-                      className={`px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center space-x-1.5 ${
-                        isPunchedIn
-                          ? 'bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/20'
-                      }`}
-                    >
-                      <Icon name="clock" className="w-4 h-4" />
-                      <span>{isPunchedIn ? `Punch Out (${punchInTime})` : 'GPS Punch In'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Viki Joint Partner Companion Alert */}
-                {currentUser.id === 'vikram' && (
-                  <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center space-x-1.5 font-bold text-amber-900">
-                        <span>🤝</span>
-                        <span>Accompanying Sales Partner for Viki:</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setVikiPartner('prashik')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                            vikiPartner === 'prashik' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-300'
-                          }`}
-                        >
-                          🏢 Prashik Hajare (Manager)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setVikiPartner('gopal')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                            vikiPartner === 'gopal' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-700 border border-slate-300'
-                          }`}
-                        >
-                          🔵 Gopal Ambagade (Sales)
-                        </button>
-                      </div>
-                    </div>
-                    <div className="text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200 flex items-center justify-between flex-wrap gap-2">
-                      <span>
-                        💡 <b>For Madhav GST Orders:</b> Viki can also sell Madhav GST products! Select <b>'🔵 Madhav (GST)'</b> from top switcher.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => switchFirm(currentFirmKey === 'MADHAV' ? 'SHIVOM' : 'MADHAV')}
-                        className="px-2.5 py-0.5 rounded-md bg-emerald-700 text-white font-bold text-[10px]"
-                      >
-                        {currentFirmKey === 'MADHAV' ? 'Switch to Shivom ➔' : 'Switch to Madhav ➔'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {isPunchedIn && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                    <span className="flex items-center text-emerald-600 font-medium">
-                      <Icon name="shield-check" className="w-4 h-4 mr-1" />
-                      GPS Attendance Verified (Nagpur) - Active
-                    </span>
-                    <button onClick={() => setActiveModal('PAYROLL_SLIP')} className="text-blue-600 font-bold hover:underline">
-                      Cash in Hand: ₹{activeSalesman.cash_in_hand.toLocaleString()} &rarr;
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {/* FIELD SALES EXECUTIVE SUBTABS NAVIGATION */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                 <button
@@ -13382,17 +13281,57 @@ Thank you for your valuable cooperation! 🙏
               {/* ============================================================== */}
               {fieldSalesTab === 'DASHBOARD' && (
                 <div className="space-y-4">
-                  {/* Hero Call to Action Card */}
-                  <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden">
-                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  {/* Merged Executive Field Sales Hero & Operations Card */}
+                  <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden space-y-3">
+                    {/* Top Row: Beat badge, GPS Attendance, Punch Out, Cash */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/10 text-xs">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-full bg-white/15 text-blue-200 text-[11px] font-semibold border border-white/10">
+                          📍 {activeSalesman.assigned_beat} • {currentFirm.name}
+                        </span>
+                        {isPunchedIn && (
+                          <span className="inline-flex items-center text-emerald-300 text-[11px] bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-500/30 font-medium">
+                            <Icon name="shield-check" className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                            GPS Attendance Active (Nagpur)
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFieldSalesTab('COLLECTIONS')}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 text-emerald-200 font-bold text-[11px] flex items-center gap-1 transition-all"
+                          title="View Cash in Hand"
+                        >
+                          <span>💰 Cash:</span>
+                          <span className="text-white font-mono font-bold">₹{activeSalesman.cash_in_hand.toLocaleString()}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={togglePunch}
+                          className={`px-3 py-1 rounded-lg font-bold text-[11px] transition-all flex items-center space-x-1 shadow-sm ${
+                            isPunchedIn
+                              ? 'bg-rose-500/30 hover:bg-rose-500/40 text-rose-200 border border-rose-400/30'
+                              : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                          }`}
+                        >
+                          <Icon name="clock" className="w-3.5 h-3.5" />
+                          <span>{isPunchedIn ? `Punch Out (${punchInTime})` : 'GPS Punch In'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Main Greeting & Action Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-blue-200 text-[11px] font-semibold border border-white/10 mb-2">
-                          <span>📍 {activeSalesman.assigned_beat}</span>
-                          <span>•</span>
-                          <span>{currentFirm.name}</span>
+                        <div className="text-[11px] uppercase tracking-wider text-blue-300 font-bold">
+                          {currentFirmKey === 'MADHAV' ? 'Madhav Authorized Sales Representative' : 'Shivom Non-GST Sales Representative'}
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                          Hello, {currentUser.name}! 👋
+                        <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2 mt-0.5">
+                          <span>Hello, {currentUser.name}!</span>
+                          <span>👋</span>
                         </h2>
                         <p className="text-xs sm:text-sm text-blue-100 font-medium mt-1">
                           You have booked <b>{myOrders.length} orders</b> worth <b>₹{myTodayTotal.toLocaleString()}</b> on your beat today.
@@ -13408,6 +13347,40 @@ Thank you for your valuable cooperation! 🙏
                         <span>📝 Book New Order Now</span>
                       </button>
                     </div>
+
+                    {/* Viki Joint Partner Companion (Only for Vikram Sing, compact and clean inside card) */}
+                    {currentUser.id === 'vikram' && (
+                      <div className="pt-2.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center space-x-1.5 text-blue-200">
+                          <span>🤝</span>
+                          <span className="font-semibold text-[11px]">Accompanying Partner for Viki:</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setVikiPartner('prashik')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              vikiPartner === 'prashik'
+                                ? 'bg-amber-400 text-slate-950 shadow-xs'
+                                : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+                            }`}
+                          >
+                            🏢 Prashik Hajare (Manager)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVikiPartner('gopal')}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                              vikiPartner === 'gopal'
+                                ? 'bg-amber-400 text-slate-950 shadow-xs'
+                                : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+                            }`}
+                          >
+                            🔵 Gopal Ambagade (Sales)
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Daily Beat Target vs Achievement Progress Tracker */}
