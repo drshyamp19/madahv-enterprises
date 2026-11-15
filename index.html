@@ -12021,6 +12021,7 @@ const MASTER_DAILY_COLLECTIONS = [
       }, [products]);
 
       const [cart, setCart] = useState([]);
+      const [isCartExpanded, setIsCartExpanded] = useState(false);
       const [paidTodayInput, setPaidTodayInput] = useState(0);
 
       // Flexible on-site rates (No fixed rates for Green Chef or any products - salesman decides on-site!)
@@ -12724,6 +12725,7 @@ Do you still want to proceed and book this order?`);
         setOrdersHistory(prev => [newOrder, ...prev]);
         setLastGeneratedOrder(newOrder);
         setCart([]);
+        setIsCartExpanded(false);
         setPaidTodayInput(0);
         setActiveModal('WHATSAPP_SHARE');
       };
@@ -14246,154 +14248,223 @@ Thank you for your valuable cooperation! 🙏
                 </div>
               </div>
 
-              {/* Order Cart & Detailed Vyapar Breakdown */}
-              {cart.length > 0 && (
-                <div className="bg-white rounded-2xl p-4 shadow-md border-2 border-blue-500/30 sticky bottom-3 z-30 space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="font-bold text-slate-800 text-sm">
-                      `Order Cart (${cart.length} Items) - ${currentFirm.name}`
-                    </span>
-                    <button onClick={() => setCart([])} className="text-xs text-rose-500 font-bold hover:underline">
-                      'Clear All'
-                    </button>
-                  </div>
-
-                  {/* Cart Table with Editable Price and Qty */}
-                  <div className="py-1 space-y-2 max-h-44 overflow-y-auto no-scrollbar text-xs">
-                    {cart.map(item => (
-                      <div key={item.product_id} className="p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="font-bold text-slate-900 truncate">{item.name}</div>
-                          <div className="text-[10px] text-slate-500 font-mono">
-                            {item.sku || 'PART'} {item.isCustom ? '• (Custom Spare)' : ''} {item.isExchange ? '• 🔄 (1-to-1 Exchange - ₹0)' : ''}
-                            {item.isAdvance && (
-                              <span className="ml-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-bold text-[9px] border border-purple-200">
-                                {item.readyQty > 0 ? `⏳ ${item.readyQty} Ready + ${item.advanceQty} Advance Backorder` : `⏳ ${item.advanceQty} Advance Booking`}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Editable Rate */}
-                        <div className="flex items-center space-x-1">
-                          <span className="text-[11px] text-slate-400 font-bold">₹</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={item.price}
-                            onChange={(e) => updateCartItemPrice(item.product_id, e.target.value)}
-                            className="w-16 p-1 bg-white border border-slate-300 rounded font-bold text-right text-xs text-blue-700"
-                            title={t('Edit Price', 'Edit Price')}
-                          />
-                        </div>
-
-                        {/* Editable Qty */}
-                        <div className="flex items-center space-x-1">
-                          <button
-                            type="button"
-                            onClick={() => updateCartItemQty(item.product_id, item.quantity - 1)}
-                            className="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 font-bold text-xs flex items-center justify-center"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateCartItemQty(item.product_id, e.target.value)}
-                            className="w-10 text-center font-bold text-xs bg-white border border-slate-300 rounded py-0.5"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => updateCartItemQty(item.product_id, item.quantity + 1)}
-                            className="w-5 h-5 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {/* Subtotal & Delete */}
-                        <div className="text-right flex items-center space-x-2">
-                          <span className="font-mono font-bold text-slate-800 text-xs">
-                            ₹{(item.price * item.quantity).toLocaleString()}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setCart(cart.filter(ci => ci.product_id !== item.product_id))}
-                            className="text-rose-500 hover:text-rose-700 font-bold text-sm px-1"
-                            title={t('Remove Item', 'Remove Item')}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
-                    <label className="font-bold text-slate-700 whitespace-nowrap">
-                      {t("Today's Paid Cash / UPI (Paid Today):", "Today's Received Cash / UPI (Paid Today):")}
-                    </label>
+              {/* Floating Slim Cart Bar (When collapsed - keeps product list 100% visible) */}
+              {cart.length > 0 && !isCartExpanded && (
+                <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-8 md:w-[420px] bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl z-40 border border-slate-700/80 flex items-center justify-between">
+                  <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setIsCartExpanded(true)}>
                     <div className="relative">
-                      <span className="absolute left-2.5 top-2 text-slate-400 font-bold">₹</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={paidTodayInput}
-                        onChange={(e) => setPaidTodayInput(e.target.value)}
-                        placeholder="0"
-                        className="w-32 bg-slate-50 border border-slate-300 rounded-lg pl-6 pr-2 py-1.5 font-bold text-right text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Vyapar Formula Box */}
-                  <div className="mt-2 p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
-                    <div className="flex justify-between text-slate-300">
-                      <span>Current Order Total:</span>
-                      <span className="font-mono font-semibold">₹{billSummary.currentOrderTotal.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-slate-300">
-                      <span>(+) Previous Outstanding Due:</span>
-                      <span className="font-mono font-semibold">₹{billSummary.previousOutstanding.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-emerald-400">
-                      <span>{t('(-) Received / Paid Today:', '(-) Received Today:')}</span>
-                      <span className="font-mono font-semibold">₹{billSummary.paidToday.toLocaleString()}</span>
-                    </div>
-                    <div className="pt-2 border-t border-slate-700 flex justify-between text-sm font-bold text-amber-300">
-                      <span>(=) Net Balance Due:</span>
-                      <span className="font-mono text-base font-extrabold">₹{billSummary.netBalanceDue.toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  {selectedClient && billSummary.netBalanceDue > (selectedClient.credit_limit || 10000) && (
-                    <div className="mt-2 p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between">
-                      <div className="flex items-center space-x-1.5 font-bold">
-                        <Icon name="alert" className="w-4 h-4 text-rose-400" />
-                        <span>⚠️ Credit Limit (₹{(selectedClient.credit_limit || 10000).toLocaleString()}) Exceeded!</span>
+                      <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-lg text-white shadow-md">
+                        🛒
                       </div>
-                      <span className="font-mono font-bold text-[11px] bg-rose-500/40 px-2 py-0.5 rounded text-white">
-                        +₹{(billSummary.netBalanceDue - (selectedClient.credit_limit || 10000)).toLocaleString()} Overdue
+                      <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-950 font-black text-[11px] w-5 h-5 rounded-full flex items-center justify-center shadow">
+                        {cart.length}
                       </span>
                     </div>
-                  )}
+                    <div>
+                      <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                        {cart.length} {cart.length === 1 ? 'Item' : 'Items'} in Cart
+                      </div>
+                      <div className="text-base font-black text-amber-300">
+                        ₹{billSummary.currentOrderTotal.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
 
                   <button
-                    onClick={handleCreateOrder}
-                    className={`w-full mt-2 py-3 rounded-xl text-white font-bold text-sm shadow-lg flex items-center justify-center space-x-2 transition-all ${
-                      cart.some(i => i.isAdvance)
-                        ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/30'
-                        : (currentFirmKey === 'MADHAV' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30')
-                    }`}
+                    type="button"
+                    onClick={() => setIsCartExpanded(true)}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center space-x-1.5 transition-all transform active:scale-95"
                   >
-                    <Icon name="check" className="w-4 h-4" />
-                    <span>
-                      {cart.some(i => i.isAdvance)
-                        ? `📋 Book Order & Advance Slip (${activeSalesman.name})`
-                        : `📋 Confirm Order & Generate Booking Slip (${activeSalesman.name})`}
-                    </span>
+                    <span>View Cart & Bill ➔</span>
                   </button>
+                </div>
+              )}
+
+              {/* Expanded Order Cart & Detailed Vyapar Breakdown (Bottom Sheet Modal) */}
+              {cart.length > 0 && isCartExpanded && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex flex-col justify-end p-0 md:p-6 md:items-center">
+                  <div className="bg-white rounded-t-3xl md:rounded-3xl p-4 md:p-5 shadow-2xl border-t-2 md:border-2 border-blue-500 max-w-xl w-full max-h-[90vh] overflow-y-auto no-scrollbar space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">🛒</span>
+                        <div>
+                          <span className="font-extrabold text-slate-900 text-sm block">
+                            Order Cart ({cart.length} Items)
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-medium">
+                            {currentFirm.name}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsCartExpanded(false)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center space-x-1 transition-all"
+                          title="Minimize cart to view full product list"
+                        >
+                          <span>▼ Add More Items</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm('Clear all items from current cart?')) {
+                              setCart([]);
+                              setIsCartExpanded(false);
+                            }
+                          }}
+                          className="text-xs text-rose-600 font-bold hover:underline px-1"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Cart Table with Editable Price and Qty */}
+                    <div className="py-1 space-y-2 max-h-48 overflow-y-auto no-scrollbar text-xs">
+                      {cart.map(item => (
+                        <div key={item.product_id} className="p-2 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-slate-900 truncate">{item.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">
+                              {item.sku || 'PART'} {item.isCustom ? '• (Custom Spare)' : ''} {item.isExchange ? '• 🔄 (1-to-1 Exchange - ₹0)' : ''}
+                              {item.isAdvance && (
+                                <span className="ml-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-bold text-[9px] border border-purple-200">
+                                  {item.readyQty > 0 ? `⏳ ${item.readyQty} Ready + ${item.advanceQty} Advance Backorder` : `⏳ ${item.advanceQty} Advance Booking`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Editable Rate */}
+                          <div className="flex items-center space-x-1">
+                            <span className="text-[11px] text-slate-400 font-bold">₹</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={item.price}
+                              onChange={(e) => updateCartItemPrice(item.product_id, e.target.value)}
+                              className="w-16 p-1 bg-white border border-slate-300 rounded font-bold text-right text-xs text-blue-700"
+                              title={t('Edit Price', 'Edit Price')}
+                            />
+                          </div>
+
+                          {/* Editable Qty */}
+                          <div className="flex items-center space-x-1">
+                            <button
+                              type="button"
+                              onClick={() => updateCartItemQty(item.product_id, item.quantity - 1)}
+                              className="w-5 h-5 rounded bg-slate-200 hover:bg-slate-300 font-bold text-xs flex items-center justify-center"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateCartItemQty(item.product_id, e.target.value)}
+                              className="w-10 text-center font-bold text-xs bg-white border border-slate-300 rounded py-0.5"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => updateCartItemQty(item.product_id, item.quantity + 1)}
+                              className="w-5 h-5 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* Subtotal & Delete */}
+                          <div className="text-right flex items-center space-x-2">
+                            <span className="font-mono font-bold text-slate-800 text-xs">
+                              ₹{(item.price * item.quantity).toLocaleString()}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setCart(cart.filter(ci => ci.product_id !== item.product_id))}
+                              className="text-rose-500 hover:text-rose-700 font-bold text-sm px-1"
+                              title={t('Remove Item', 'Remove Item')}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                      <label className="font-bold text-slate-700 whitespace-nowrap">
+                        {t("Today's Paid Cash / UPI (Paid Today):", "Today's Received Cash / UPI (Paid Today):")}
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-2 text-slate-400 font-bold">₹</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={paidTodayInput}
+                          onChange={(e) => setPaidTodayInput(e.target.value)}
+                          placeholder="0"
+                          className="w-32 bg-slate-50 border border-slate-300 rounded-lg pl-6 pr-2 py-1.5 font-bold text-right text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Vyapar Formula Box */}
+                    <div className="mt-2 p-3 bg-slate-900 text-white rounded-xl text-xs space-y-1">
+                      <div className="flex justify-between text-slate-300">
+                        <span>Current Order Total:</span>
+                        <span className="font-mono font-semibold">₹{billSummary.currentOrderTotal.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-300">
+                        <span>(+) Previous Outstanding Due:</span>
+                        <span className="font-mono font-semibold">₹{billSummary.previousOutstanding.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-400">
+                        <span>{t('(-) Received / Paid Today:', '(-) Received Today:')}</span>
+                        <span className="font-mono font-semibold">₹{billSummary.paidToday.toLocaleString()}</span>
+                      </div>
+                      <div className="pt-2 border-t border-slate-700 flex justify-between text-sm font-bold text-amber-300">
+                        <span>(=) Net Balance Due:</span>
+                        <span className="font-mono text-base font-extrabold">₹{billSummary.netBalanceDue.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {selectedClient && billSummary.netBalanceDue > (selectedClient.credit_limit || 10000) && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between">
+                        <div className="flex items-center space-x-1.5 font-bold">
+                          <Icon name="alert" className="w-4 h-4 text-rose-400" />
+                          <span>⚠️ Credit Limit (₹{(selectedClient.credit_limit || 10000).toLocaleString()}) Exceeded!</span>
+                        </div>
+                        <span className="font-mono font-bold text-[11px] bg-rose-500/40 px-2 py-0.5 rounded text-white">
+                          +₹{(billSummary.netBalanceDue - (selectedClient.credit_limit || 10000)).toLocaleString()} Overdue
+                        </span>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleCreateOrder}
+                      className={`w-full mt-2 py-3 rounded-xl text-white font-bold text-sm shadow-lg flex items-center justify-center space-x-2 transition-all ${
+                        cart.some(i => i.isAdvance)
+                          ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/30'
+                          : (currentFirmKey === 'MADHAV' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/30')
+                      }`}
+                    >
+                      <Icon name="check" className="w-4 h-4" />
+                      <span>
+                        {cart.some(i => i.isAdvance)
+                          ? `📋 Book Order & Advance Slip (${activeSalesman.name})`
+                          : `📋 Confirm Order & Generate Booking Slip (${activeSalesman.name})`}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCartExpanded(false)}
+                      className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all"
+                    >
+                      ▲ Back to Product List (Add More Products)
+                    </button>
+                  </div>
                 </div>
               )}
                 </div>
