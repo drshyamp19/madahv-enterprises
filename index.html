@@ -12153,7 +12153,7 @@ const MASTER_DAILY_COLLECTIONS = [
         bankName: 'HDFC Bank - Indora Branch A/C',
         amount: '',
         refNo: '',
-        depositor: 'Gopal Ambagade',
+        depositor: currentUser.name,
         handoverTo: 'Shyam Pimplkar',
         date: getTodayDDMMYYYY(),
         note: ''
@@ -16745,7 +16745,7 @@ Thank you for your valuable cooperation! 🙏
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { id: 'Shyam Pimplkar', label: 'Shyam', fullName: 'Shyam Pimplkar', role: 'Owner', icon: '👑' },
+                          { id: 'Shyam Pimplkar', label: 'Shyam', fullName: 'Shyam Pimplkar', role: 'Co-Owner', icon: '👑' },
                           { id: 'Prashik Hajare', label: 'Prashik', fullName: 'Prashik Hajare', role: 'Manager', icon: '🏢' },
                           { id: 'Roshan Pimplkar', label: 'Roshan', fullName: 'Roshan Pimplkar', role: 'Co-Owner', icon: '💼' }
                         ].map(p => {
@@ -16803,16 +16803,13 @@ Thank you for your valuable cooperation! 🙏
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-slate-700 font-bold mb-1">Depositor / Handed Over By</label>
-                      <select
-                        value={settlementForm.depositor}
-                        onChange={(e) => setSettlementForm({ ...settlementForm, depositor: e.target.value })}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-blue-600 focus:bg-white text-xs font-bold text-slate-800"
-                      >
-                        <option value="Prashik Hajare">Prashik Hajare (Manager)</option>
-                        <option value="Gopal Ambagade">Gopal Ambagade (Sales Executive)</option>
-                        <option value="Vikram Sing (Viki)">Vikram Sing (Viki)</option>
-                        <option value="Shyam Pimplkar">Shyam Pimplkar</option>
-                      </select>
+                      <input
+                        type="text"
+                        readOnly
+                        value={currentUser.name}
+                        className="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 cursor-not-allowed select-none"
+                        title="Logged in user automatically set as depositor"
+                      />
                     </div>
                     <div>
                       <label className="block text-slate-700 font-bold mb-1">Deposit Slip / UTR Ref No.</label>
@@ -16845,9 +16842,10 @@ Thank you for your valuable cooperation! 🙏
                       const amt = Number(settlementForm.amount);
                       const isBank = settlementForm.type === 'BANK_DEPOSIT';
                       const receiverPerson = settlementForm.handoverTo || 'Shyam Pimplkar';
+                      const depositorPerson = currentUser.name;
                       const desc = isBank
-                        ? `Bank Contra: Deposit to ${settlementForm.bankName} (Ref: ${settlementForm.refNo || 'Cash Deposit'}) by ${settlementForm.depositor}`
-                        : `Office Handover: Cash handed over to ${receiverPerson} at Indora Office by ${settlementForm.depositor}`;
+                        ? `Bank Contra: Deposit to ${settlementForm.bankName} (Ref: ${settlementForm.refNo || 'Cash Deposit'}) by ${depositorPerson}`
+                        : `Office Handover: Cash handed over to ${receiverPerson} at Indora Office by ${depositorPerson}`;
 
                       setExpensesList(prev => [{
                         date: formatDDMMYYYY(settlementForm.date),
