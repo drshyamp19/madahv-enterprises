@@ -4,7 +4,11 @@ param (
 )
 
 $gitPath = "C:\Users\Gopal\AppData\Local\Microsoft\WinGet\Packages\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\cmd\git.exe"
-Set-Location "C:\Users\Gopal\.gemini\antigravity\scratch\madhav-enterprises"
+if (-not (Test-Path $gitPath)) {
+    $gitPath = "git"
+}
+$projectDir = if ($PSScriptRoot) { $PSScriptRoot } else { "G:\My Drive\AntigravityProjects\madhav-enterprises" }
+Set-Location $projectDir
 
 if ($GitHubToken -ne "") {
     Write-Host "Pushing with provided Personal Access Token..." -ForegroundColor Cyan
